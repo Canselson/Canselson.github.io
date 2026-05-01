@@ -1,11 +1,11 @@
 import { Link, NavLink, Outlet, Navigate } from 'react-router-dom'
-import { CalendarDays, LogOut } from 'lucide-react'
+import { CalendarDays, Images, LogOut } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 
 const NAV_ITEMS = [
-  { to: '/admin',          label: 'Calendar', icon: CalendarDays },
-  // More sections added here as they're built
+  { to: '/admin',         label: 'Calendar', icon: CalendarDays, end: true  },
+  { to: '/admin/gallery', label: 'Gallery',  icon: Images,       end: false },
 ]
 
 export default function AdminLayout() {
@@ -49,11 +49,11 @@ function AdminNav({ email }) {
             Admin
           </span>
           <nav className="flex gap-1">
-            {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+            {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
               <NavLink
                 key={to}
                 to={to}
-                end
+                end={end}
                 className={({ isActive }) =>
                   `flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
                     isActive

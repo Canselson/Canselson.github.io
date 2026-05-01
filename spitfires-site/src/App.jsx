@@ -4,10 +4,13 @@ import { AuthProvider } from './context/AuthContext'
 import CalendarPage from './pages/CalendarPage'
 import FixturesPage from './pages/FixturesPage'
 import MatchReportPage from './pages/MatchReportPage'
+import GalleryPage from './pages/GalleryPage'
+import AlbumPage from './pages/AlbumPage'
 import LoginPage from './pages/admin/LoginPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import CalendarAdmin from './pages/admin/CalendarAdmin'
 import ReportAdmin from './pages/admin/ReportAdmin'
+import GalleryAdmin from './pages/admin/GalleryAdmin'
 import './App.css'
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -58,6 +61,8 @@ export default function App() {
           <Route path="/calendar"            element={<CalendarPage />} />
           <Route path="/fixtures"            element={<FixturesPage />} />
           <Route path="/report/:eventId"     element={<MatchReportPage />} />
+          <Route path="/gallery"             element={<GalleryPage />} />
+          <Route path="/gallery/:albumId"    element={<AlbumPage />} />
           <Route path="/teams/:teamSlug"     element={<TeamPage />} />
         </Route>
 
@@ -66,6 +71,8 @@ export default function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<CalendarAdmin />} />
           <Route path="reports/:eventId" element={<ReportAdmin />} />
+          <Route path="gallery" element={<GalleryAdmin />} />
+          <Route path="gallery/:albumId" element={<GalleryAdmin />} />
         </Route>
       </Routes>
       </AuthProvider>
@@ -117,7 +124,7 @@ function Navbar() {
 
           <Link to="/calendar" className="hover:text-white transition-colors">Calendar</Link>
           <Link to="/fixtures" className="hover:text-white transition-colors">Fixtures</Link>
-          <a href="#" className="hover:text-white transition-colors">Gallery</a>
+          <Link to="/gallery" className="hover:text-white transition-colors">Gallery</Link>
           <a href="#" className="hover:text-white transition-colors">Committee</a>
           <a
             href="#"
