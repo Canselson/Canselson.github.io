@@ -322,7 +322,7 @@ function Badge({ label, color }) {
 
 // ─── Subscribe section ────────────────────────────────────────────────────────
 
-const ICS_URL = 'https://southamptonspitfires.me/api/ics'
+const ICS_URL = 'https://www.southamptonspitfires.me/api/ics'
 
 function SubscribeSection() {
   const [copied, setCopied] = useState(false)
