@@ -1,0 +1,198 @@
+export const GOAL_TYPE_LABELS = {
+  E:  'Even Strength',
+  PP: 'Power Play',
+  SH: 'Short Handed',
+  PS: 'Penalty Shot',
+  EN: 'Empty Net',
+}
+
+export const OFFENCE_LABELS = {
+  TRIP: 'Tripping',
+  HOOK: 'Hooking',
+  ROUG: 'Roughing',
+  HIGS: 'High Sticking',
+  INT:  'Interference',
+  BOAR: 'Boarding',
+  CROS: 'Cross Checking',
+  HOLD: 'Holding',
+  SLAS: 'Slashing',
+  CHEC: 'Checking from Behind',
+  ELBW: 'Elbowing',
+  CHAR: 'Charging',
+  UNSM: 'Unsportsmanlike Conduct',
+  MISC: 'Misconduct',
+  GM:   'Game Misconduct',
+}
+
+// ─── Main export ──────────────────────────────────────────────────────────────
+
+export function parseDGS(raw) {
+  const sections = splitSections(raw)
+
+  const header = (sections['1']?.[0] ?? '').split(',').map(s => s.trim())
+  const homeTeamName = header[0] ?? ''
+  const awayTeamName = header[1] ?? ''
+  const date         = header[2] ?? ''
+  const time         = header[3] ?? ''
+
+  const homeRoster = parseRoster(sections['2'] ?? [])
+  const awayRoster = parseRoster(sections['3'] ?? [])
+
+  // Player lookup by BUIHA ID → player object with team tag
+  const playerMap = {}
+  for (const p of homeRoster) playerMap[p.id] = { ...p, team: 'home' }
+  for (const p of awayRoster) playerMap[p.id] = { ...p, team: 'away' }
+
+  const goals      = parseGoals(sections['4'] ?? [], playerMap)
+  const penalties  = parsePenalties(sections['7'] ?? [], playerMap)
+  const homeGoalie = parseGoalie(sections['8']?.[0], playerMap)
+  const awayGoalie = parseGoalie(sections['9']?.[0], playerMap)
+
+  const homeScore = goals.filter(g => g.team === 'home').length
+  const awayScore = goals.filter(g => g.team === 'away').length
+
+  return {
+    homeTeamName, awayTeamName, date, time,
+    homeScore, awayScore,
+    homeRoster, awayRoster,
+    goals, penalties,
+    homeGoalie, awayGoalie,
+  }
+}
+
+// ─── Section splitter ─────────────────────────────────────────────────────────
+
+function splitSections(raw) {
+  const sections = {}
+  let current = null
+  for (const line of raw.replace(/\r/g, '').split('\n')) {
+    const t = line.trim()
+    if (!t || t === '{}') continue
+    if (t.startsWith('%')) {
+      current = t.slice(1)
+      sections[current] = []
+    } else if (current !== null) {
+      sections[current].push(t)
+    }
+  }
+  return sections
+}
+
+// ─── Roster (%2 / %3) ─────────────────────────────────────────────────────────
+// playerID, name, jerseyNum, goals, assists, PIM, isCaptain, isAssistCaptain,
+// isNetminder, ?, dressed(1=yes)
+
+function parseRoster(lines) {
+  return lines.map(line => {
+    const p = line.split(',').map(s => s.trim())
+    return {
+      id:                 p[0],
+      name:               p[1],
+      number:             parseInt(p[2])  || 0,
+      goals:              parseInt(p[3])  || 0,
+      assists:            parseInt(p[4])  || 0,
+      pim:                parseInt(p[5])  || 0,
+      isCaptain:          p[6] === '1',
+      isAssistantCaptain: p[7] === '1',
+      isNetminder:        p[8] === '1',
+      dressed:            p[10] === '1',
+    }
+  })
+}
+
+// ─── Goals (%4) ───────────────────────────────────────────────────────────────
+// cumulativeTime, scorerID, assist1ID|null, assist2ID|null, type, team(1=home/2=away), UUID
+
+function parseGoals(lines, playerMap) {
+  return lines.map(line => {
+    const p    = line.split(',').map(s => s.trim())
+    const a1Id = p[2] !== 'null' ? p[2] : null
+    const a2Id = p[3] !== 'null' ? p[3] : null
+    const type = p[4]
+    return {
+      cumulativeTime: p[0],
+      period:         getPeriod(p[0]),
+      periodTime:     getPeriodTime(p[0]),
+      scorer:         playerMap[p[1]]  ?? null,
+      assist1:        a1Id ? (playerMap[a1Id] ?? null) : null,
+      assist2:        a2Id ? (playerMap[a2Id] ?? null) : null,
+      type,
+      typeLabel:      GOAL_TYPE_LABELS[type] ?? type,
+      team:           p[5] === '1' ? 'home' : 'away',
+    }
+  })
+}
+
+// ─── Penalties (%7) ───────────────────────────────────────────────────────────
+// offenceCode, givenAt, playerID, minutes, penaltyStart, penaltyEnd, UUID
+
+function parsePenalties(lines, playerMap) {
+  return lines.map(line => {
+    const p      = line.split(',').map(s => s.trim())
+    const player = playerMap[p[2]] ?? null
+    const code   = p[0]
+    return {
+      offenceCode:  code,
+      offenceLabel: OFFENCE_LABELS[code] ?? code,
+      cumulativeTime: p[1],
+      period:       getPeriod(p[1]),
+      periodTime:   getPeriodTime(p[1]),
+      player,
+      team:         player?.team ?? null,
+      minutes:      parseInt(p[3]) || 0,
+      start:        p[4],
+      end:          p[5],
+    }
+  })
+}
+
+// ─── Goalie (%8 / %9) ─────────────────────────────────────────────────────────
+// playerID, TOI, P1shots, P1goals, P2shots, P2goals, P3shots, P3goals
+
+function parseGoalie(line, playerMap) {
+  if (!line) return null
+  const p       = line.split(',').map(s => s.trim())
+  const periods = [
+    { shots: parseInt(p[2]) || 0, goals: parseInt(p[3]) || 0 },
+    { shots: parseInt(p[4]) || 0, goals: parseInt(p[5]) || 0 },
+    { shots: parseInt(p[6]) || 0, goals: parseInt(p[7]) || 0 },
+  ]
+  const totalShots = periods.reduce((a, x) => a + x.shots, 0)
+  const totalGoals = periods.reduce((a, x) => a + x.goals, 0)
+  const saves      = totalShots - totalGoals
+  return {
+    player:       playerMap[p[0]] ?? null,
+    timeOnIce:    p[1],
+    periods,
+    totalShots,
+    totalGoals,
+    saves,
+    savePercent:  totalShots > 0
+      ? ((saves / totalShots) * 100).toFixed(1)
+      : '100.0',
+  }
+}
+
+// ─── Time helpers ─────────────────────────────────────────────────────────────
+// Times in .dgs are cumulative game clock. Periods are 3×20 min.
+
+function getPeriod(timeStr) {
+  if (!timeStr) return 1
+  const mins = parseInt(timeStr.split(':')[0]) || 0
+  if (mins < 20) return 1
+  if (mins < 40) return 2
+  if (mins < 60) return 3
+  return 'OT'
+}
+
+function getPeriodTime(timeStr) {
+  if (!timeStr) return '0:00'
+  const [mStr, sStr] = timeStr.split(':')
+  const totalSecs    = (parseInt(mStr) || 0) * 60 + (parseInt(sStr) || 0)
+  const period       = getPeriod(timeStr)
+  const offset       = (typeof period === 'number' ? period - 1 : 3) * 20 * 60
+  const elapsed      = totalSecs - offset
+  const m            = Math.floor(elapsed / 60)
+  const s            = elapsed % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}

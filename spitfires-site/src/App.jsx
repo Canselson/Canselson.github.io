@@ -2,9 +2,12 @@ import { BrowserRouter, Routes, Route, Link, useParams, Outlet } from 'react-rou
 import { ChevronDown } from 'lucide-react'
 import { AuthProvider } from './context/AuthContext'
 import CalendarPage from './pages/CalendarPage'
+import FixturesPage from './pages/FixturesPage'
+import MatchReportPage from './pages/MatchReportPage'
 import LoginPage from './pages/admin/LoginPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import CalendarAdmin from './pages/admin/CalendarAdmin'
+import ReportAdmin from './pages/admin/ReportAdmin'
 import './App.css'
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -52,14 +55,17 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/"                  element={<HomePage />} />
-          <Route path="/calendar"          element={<CalendarPage />} />
-          <Route path="/teams/:teamSlug"   element={<TeamPage />} />
+          <Route path="/calendar"            element={<CalendarPage />} />
+          <Route path="/fixtures"            element={<FixturesPage />} />
+          <Route path="/report/:eventId"     element={<MatchReportPage />} />
+          <Route path="/teams/:teamSlug"     element={<TeamPage />} />
         </Route>
 
         {/* Admin routes */}
         <Route path="/admin/login" element={<LoginPage />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<CalendarAdmin />} />
+          <Route path="reports/:eventId" element={<ReportAdmin />} />
         </Route>
       </Routes>
       </AuthProvider>
@@ -110,7 +116,7 @@ function Navbar() {
           </div>
 
           <Link to="/calendar" className="hover:text-white transition-colors">Calendar</Link>
-          <a href="#" className="hover:text-white transition-colors">Reports</a>
+          <Link to="/fixtures" className="hover:text-white transition-colors">Fixtures</Link>
           <a href="#" className="hover:text-white transition-colors">Gallery</a>
           <a href="#" className="hover:text-white transition-colors">Committee</a>
           <a

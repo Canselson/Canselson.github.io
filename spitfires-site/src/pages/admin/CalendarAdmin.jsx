@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Pencil, Trash2, X, AlertTriangle } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Pencil, Trash2, X, AlertTriangle, FileText } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 const EVENT_TYPES = {
@@ -32,6 +33,7 @@ const EMPTY_FORM = {
 }
 
 export default function CalendarAdmin() {
+  const navigate = useNavigate()
   const [events,      setEvents]      = useState([])
   const [loading,     setLoading]     = useState(true)
   const [panelEvent,  setPanelEvent]  = useState(null)  // null=closed, EMPTY_FORM=new, populated=edit
@@ -91,6 +93,7 @@ export default function CalendarAdmin() {
               events={[...past].reverse()}
               onEdit={openEdit}
               onDelete={setDeleteTarget}
+              onReport={ev => navigate(`/admin/reports/${ev.id}`)}
               dimmed
             />
           )}
@@ -120,7 +123,7 @@ export default function CalendarAdmin() {
 
 // ─── Event list section ───────────────────────────────────────────────────────
 
-function EventSection({ title, events, onEdit, onDelete, emptyText, dimmed = false }) {
+function EventSection({ title, events, onEdit, onDelete, onReport, emptyText, dimmed = false }) {
   return (
     <div className="mb-10">
       <div className="flex items-center gap-3 mb-3">
@@ -137,6 +140,7 @@ function EventSection({ title, events, onEdit, onDelete, emptyText, dimmed = fal
               event={ev}
               onEdit={onEdit}
               onDelete={onDelete}
+              onReport={onReport}
               dimmed={dimmed}
             />
           ))}
@@ -146,7 +150,7 @@ function EventSection({ title, events, onEdit, onDelete, emptyText, dimmed = fal
   )
 }
 
-function EventRow({ event, onEdit, onDelete, dimmed }) {
+function EventRow({ event, onEdit, onDelete, onReport, dimmed }) {
   const start  = new Date(event.starts_at)
   const end    = event.ends_at ? new Date(event.ends_at) : null
   const isMulti = end && end.toDateString() !== start.toDateString()
@@ -204,6 +208,15 @@ function EventRow({ event, onEdit, onDelete, dimmed }) {
 
       {/* Actions */}
       <div className="flex gap-1 shrink-0 ml-auto">
+        {dimmed && event.type === 'game' && onReport && (
+          <button
+            onClick={() => onReport(event)}
+            title="Edit match report"
+            className="p-2 rounded-lg text-white/40 hover:text-[#7ec8e3] hover:bg-[#00436b]/20 transition-colors"
+          >
+            <FileText size={14} />
+          </button>
+        )}
         <button
           onClick={() => onEdit(event)}
           className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
