@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Link, useParams, Outlet } from 'react-router-dom'
 import { ChevronDown } from 'lucide-react'
 import { AuthProvider } from './context/AuthContext'
+import { supabase } from './lib/supabase'
 import CalendarPage from './pages/CalendarPage'
 import FixturesPage from './pages/FixturesPage'
 import MatchReportPage from './pages/MatchReportPage'
@@ -23,31 +25,13 @@ const teams = [
   { name: "Women's",  slug: 'womens',  img: '/team_photos/Womens.jpg' },
 ]
 
-const recentResults = [
-  { date: '26 Apr', home: 'Southampton', homeScore: 4, away: 'Exeter',      awayScore: 2 },
-  { date: '19 Apr', home: 'Bristol',     homeScore: 1, away: 'Southampton', awayScore: 5 },
-  { date: '12 Apr', home: 'Southampton', homeScore: 3, away: 'Bath',        awayScore: 3 },
-]
-
-const upcomingGames = [
-  { date: 'Sat 10 May', time: '19:30', opponent: 'Cardiff', venue: 'Home' },
-  { date: 'Sat 17 May', time: '20:00', opponent: 'Bristol', venue: 'Away' },
-  { date: 'Sat 24 May', time: '19:00', opponent: 'Exeter',  venue: 'Home' },
-]
-
-const nextSocial = {
-  title:    'End of Season Banquet',
-  date:     'Fri 16 May',
-  time:     '7:00 PM',
-  location: 'The Talking Heads, Southampton',
+const TEAM_NAMES = {
+  'a-team': 'A Team',
+  'b-team': 'B Team',
+  'c-team': 'C Team',
+  'd-team': 'D Team',
+  'womens': "Women's",
 }
-
-const matchPhotos = [
-  { src: '/team_photos/B vs Cambridge  22-11-25.jpeg',            label: 'B vs Cambridge'       },
-  { src: '/team_photos/C vs Cov 24-01-26.jpg',                    label: 'C vs Coventry'         },
-  { src: '/team_photos/D vs Birmingham D 28-03-26.jpeg',          label: 'D vs Birmingham'       },
-  { src: '/team_photos/Womens vs Birmingham Womens 22-02-26.jpeg', label: "Women's vs Birmingham" },
-]
 
 // ─── App / Router ─────────────────────────────────────────────────────────────
 
@@ -141,12 +125,43 @@ function Navbar() {
 // ─── Home Page ────────────────────────────────────────────────────────────────
 
 function HomePage() {
+  const [homeData, setHomeData] = useState(null)
+
+  useEffect(() => {
+    const now = new Date().toISOString()
+    Promise.all([
+      supabase.from('events')
+        .select('id, opponent, home_away, team, starts_at, match_reports(id, home_score, away_score)')
+        .eq('type', 'game').lt('starts_at', now)
+        .order('starts_at', { ascending: false }).limit(3),
+      supabase.from('events')
+        .select('id, opponent, home_away, team, starts_at, location')
+        .eq('type', 'game').gte('starts_at', now)
+        .order('starts_at', { ascending: true }).limit(3),
+      supabase.from('events')
+        .select('id, title, starts_at, location')
+        .eq('type', 'social').gte('starts_at', now)
+        .order('starts_at', { ascending: true }).limit(1),
+      supabase.from('media_photos')
+        .select('id, url, caption, album_id')
+        .order('created_at', { ascending: false }).limit(24),
+    ]).then(([{ data: recent }, { data: upcoming }, { data: socials }, { data: photos }]) => {
+      const shuffled = (photos || []).sort(() => Math.random() - 0.5).slice(0, 4)
+      setHomeData({
+        recentGames:   recent   || [],
+        upcomingGames: upcoming || [],
+        nextSocial:    socials?.[0] ?? null,
+        galleryPhotos: shuffled,
+      })
+    })
+  }, [])
+
   return (
     <>
       <Hero />
-      <InfoStrip />
+      <InfoStrip data={homeData} />
       <TeamsSection />
-      <MatchGallery />
+      <MatchGallery photos={homeData?.galleryPhotos} />
     </>
   )
 }
@@ -180,18 +195,18 @@ function Hero() {
           Southampton University Ice Hockey Club
         </p>
         <div className="flex flex-wrap gap-4 justify-center">
-          <a
-            href="#"
+          <Link
+            to="/fixtures"
             className="bg-[#00436b] hover:bg-[#005a8f] text-white font-bold px-8 py-3 rounded-sm uppercase tracking-widest text-sm transition-colors"
           >
             View Fixtures
-          </a>
-          <a
-            href="#"
+          </Link>
+          <Link
+            to="/gallery"
             className="bg-[#641e31] hover:bg-[#7a2540] text-white font-bold px-8 py-3 rounded-sm uppercase tracking-widest text-sm transition-colors"
           >
-            Join the Club
-          </a>
+            Gallery
+          </Link>
         </div>
       </div>
       <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#0a0f1a] to-transparent" />
@@ -199,70 +214,117 @@ function Hero() {
   )
 }
 
-function InfoStrip() {
+function InfoStrip({ data }) {
   return (
     <section className="max-w-7xl mx-auto px-4 pb-16 grid gap-6 md:grid-cols-3">
       <InfoCard title="Recent Results">
-        {recentResults.map((r, i) => {
-          const sotonHome = r.home === 'Southampton'
-          const sotonScore = sotonHome ? r.homeScore : r.awayScore
-          const oppScore   = sotonHome ? r.awayScore : r.homeScore
-          const opponent   = sotonHome ? r.away : r.home
-          const win  = sotonScore > oppScore
-          const draw = sotonScore === oppScore
-          const badge    = draw ? 'D' : win ? 'W' : 'L'
-          const badgeBg  = draw ? '#374151' : win ? '#14532d' : '#7f1d1d'
-          return (
-            <div key={i} className="flex items-center gap-3 py-3 border-b border-white/10 last:border-0">
-              <span
-                className="w-7 h-7 rounded text-xs font-black flex items-center justify-center shrink-0"
-                style={{ backgroundColor: badgeBg }}
-              >
-                {badge}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-white text-sm font-semibold truncate">vs {opponent}</p>
-                <p className="text-white/40 text-xs">{r.date}</p>
-              </div>
-              <span className="text-white font-bold text-sm tabular-nums">
-                {r.homeScore}–{r.awayScore}
-              </span>
-            </div>
-          )
-        })}
+        <RecentResults games={data?.recentGames} loading={data === null} />
       </InfoCard>
-
       <InfoCard title="Upcoming Fixtures">
-        {upcomingGames.map((g, i) => (
-          <div key={i} className="flex items-center gap-3 py-3 border-b border-white/10 last:border-0">
-            <div
-              className="w-7 h-7 rounded text-xs font-black flex items-center justify-center shrink-0"
-              style={{ backgroundColor: g.venue === 'Home' ? '#003a5c' : '#4a1525' }}
-            >
-              {g.venue === 'Home' ? 'H' : 'A'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-semibold truncate">vs {g.opponent}</p>
-              <p className="text-white/40 text-xs">{g.date} · {g.time}</p>
-            </div>
-          </div>
-        ))}
+        <UpcomingFixtures games={data?.upcomingGames} loading={data === null} />
       </InfoCard>
-
       <InfoCard title="Next Social">
-        <div className="py-4 space-y-3">
-          <p className="text-white font-bold text-xl leading-snug">{nextSocial.title}</p>
-          <div className="space-y-1">
-            <p className="text-white/50 text-sm">{nextSocial.date} · {nextSocial.time}</p>
-            <p className="text-white/50 text-sm">{nextSocial.location}</p>
-          </div>
-          <a href="#" className="inline-block mt-2 text-xs font-bold uppercase tracking-widest text-[#c0e8f8] hover:text-white transition-colors">
-            More Info →
-          </a>
-        </div>
+        <NextSocial social={data?.nextSocial} loading={data === null} />
       </InfoCard>
     </section>
   )
+}
+
+function RecentResults({ games, loading }) {
+  if (loading) return <LoadingRows />
+  if (!games?.length) return <EmptyState>No results yet.</EmptyState>
+  return games.map(game => {
+    const report  = game.match_reports?.[0]
+    const isHome  = game.home_away === 'home'
+    const ourScore = report ? (isHome ? report.home_score : report.away_score) : null
+    const theirScore = report ? (isHome ? report.away_score : report.home_score) : null
+    const hasScore = ourScore !== null && theirScore !== null
+    const win  = hasScore && ourScore > theirScore
+    const draw = hasScore && ourScore === theirScore
+    const badge   = !hasScore ? '?' : draw ? 'D' : win ? 'W' : 'L'
+    const badgeBg = !hasScore ? '#374151' : draw ? '#374151' : win ? '#14532d' : '#7f1d1d'
+    const date = new Date(game.starts_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    const row = (
+      <div key={game.id} className="flex items-center gap-3 py-3 border-b border-white/10 last:border-0">
+        <span className="w-7 h-7 rounded text-xs font-black flex items-center justify-center shrink-0" style={{ backgroundColor: badgeBg }}>
+          {badge}
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-white text-sm font-semibold truncate">vs {game.opponent}</p>
+          <p className="text-white/40 text-xs">{TEAM_NAMES[game.team] ?? game.team} · {date}</p>
+        </div>
+        {hasScore ? (
+          <span className="text-white font-bold text-sm tabular-nums shrink-0">
+            {report.home_score}–{report.away_score}
+          </span>
+        ) : (
+          <span className="text-white/20 text-xs shrink-0">TBD</span>
+        )}
+      </div>
+    )
+    return report ? <Link key={game.id} to={`/report/${game.id}`} className="block hover:bg-white/5 -mx-5 px-5 rounded transition-colors">{row}</Link> : row
+  })
+}
+
+function UpcomingFixtures({ games, loading }) {
+  if (loading) return <LoadingRows />
+  if (!games?.length) return <EmptyState>No upcoming fixtures.</EmptyState>
+  return games.map(game => {
+    const date   = new Date(game.starts_at)
+    const isHome = game.home_away === 'home'
+    return (
+      <Link key={game.id} to="/fixtures" className="flex items-center gap-3 py-3 border-b border-white/10 last:border-0 hover:bg-white/5 -mx-5 px-5 rounded transition-colors">
+        <div className="w-7 h-7 rounded text-xs font-black flex items-center justify-center shrink-0" style={{ backgroundColor: isHome ? '#003a5c' : '#4a1525' }}>
+          {isHome ? 'H' : 'A'}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-white text-sm font-semibold truncate">vs {game.opponent}</p>
+          <p className="text-white/40 text-xs">
+            {date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+            {' · '}
+            {date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        </div>
+        {game.team && (
+          <span className="text-white/25 text-xs shrink-0">{TEAM_NAMES[game.team] ?? game.team}</span>
+        )}
+      </Link>
+    )
+  })
+}
+
+function NextSocial({ social, loading }) {
+  if (loading) return <div className="h-24 bg-white/5 rounded-lg animate-pulse my-4" />
+  if (!social) return <EmptyState>No upcoming socials.</EmptyState>
+  const date = new Date(social.starts_at)
+  return (
+    <div className="py-4 space-y-3">
+      <p className="text-white font-bold text-xl leading-snug">{social.title}</p>
+      <div className="space-y-1">
+        <p className="text-white/50 text-sm">
+          {date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+          {' · '}
+          {date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+        </p>
+        {social.location && <p className="text-white/50 text-sm">{social.location}</p>}
+      </div>
+      <Link to="/calendar" className="inline-block mt-2 text-xs font-bold uppercase tracking-widest text-[#c0e8f8] hover:text-white transition-colors">
+        View Calendar →
+      </Link>
+    </div>
+  )
+}
+
+function LoadingRows() {
+  return (
+    <div className="py-2 flex flex-col gap-2">
+      {[1, 2, 3].map(i => <div key={i} className="h-10 bg-white/5 rounded animate-pulse" />)}
+    </div>
+  )
+}
+
+function EmptyState({ children }) {
+  return <p className="text-white/20 text-xs py-4 uppercase tracking-wider">{children}</p>
 }
 
 function InfoCard({ title, children }) {
@@ -313,26 +375,47 @@ function TeamsSection() {
   )
 }
 
-function MatchGallery() {
+function MatchGallery({ photos }) {
+  // Hide section if we've loaded and have nothing
+  if (photos !== undefined && photos.length === 0) return null
+
+  const items = photos ?? [null, null, null, null]
+
   return (
     <section className="max-w-7xl mx-auto px-4 pb-20">
       <SectionHeading>On the Ice</SectionHeading>
       <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3">
-        {matchPhotos.map((p) => (
-          <div key={p.src} className="relative rounded-xl overflow-hidden aspect-video group cursor-pointer">
-            <img
-              src={p.src}
-              alt={p.label}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-            <div
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3"
-              style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)' }}
+        {items.map((p, i) =>
+          p === null ? (
+            <div key={i} className="aspect-video bg-[#111827] border border-white/5 rounded-xl animate-pulse" />
+          ) : (
+            <Link
+              key={p.id}
+              to={`/gallery/${p.album_id}`}
+              className="relative rounded-xl overflow-hidden aspect-video group block"
             >
-              <p className="text-white text-xs font-semibold">{p.label}</p>
-            </div>
-          </div>
-        ))}
+              <img
+                src={p.url}
+                alt={p.caption || ''}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3"
+                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)' }}
+              >
+                {p.caption && <p className="text-white text-xs font-semibold">{p.caption}</p>}
+              </div>
+            </Link>
+          )
+        )}
+      </div>
+      <div className="mt-5 text-center">
+        <Link
+          to="/gallery"
+          className="text-white/30 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors"
+        >
+          View Full Gallery →
+        </Link>
       </div>
     </section>
   )
