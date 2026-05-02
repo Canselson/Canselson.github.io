@@ -9,11 +9,13 @@ import MatchReportPage from './pages/MatchReportPage'
 import GalleryPage from './pages/GalleryPage'
 import AlbumPage from './pages/AlbumPage'
 import AboutPage from './pages/AboutPage'
+import JoinPage from './pages/JoinPage'
 import LoginPage from './pages/admin/LoginPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import CalendarAdmin from './pages/admin/CalendarAdmin'
 import ReportAdmin from './pages/admin/ReportAdmin'
 import GalleryAdmin from './pages/admin/GalleryAdmin'
+import MessagesAdmin from './pages/admin/MessagesAdmin'
 import './App.css'
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -49,6 +51,7 @@ export default function App() {
           <Route path="/gallery"             element={<GalleryPage />} />
           <Route path="/gallery/:albumId"    element={<AlbumPage />} />
           <Route path="/about"               element={<AboutPage />} />
+          <Route path="/join"                element={<JoinPage />} />
           <Route path="/teams/:teamSlug"     element={<TeamPage />} />
         </Route>
 
@@ -59,6 +62,7 @@ export default function App() {
           <Route path="reports/:eventId" element={<ReportAdmin />} />
           <Route path="gallery" element={<GalleryAdmin />} />
           <Route path="gallery/:albumId" element={<GalleryAdmin />} />
+          <Route path="messages" element={<MessagesAdmin />} />
         </Route>
       </Routes>
       </AuthProvider>
@@ -112,12 +116,12 @@ function Navbar() {
           <Link to="/fixtures" className="hover:text-white transition-colors">Fixtures</Link>
           <Link to="/gallery" className="hover:text-white transition-colors">Gallery</Link>
           <Link to="/about" className="hover:text-white transition-colors">About</Link>
-          <a
-            href="#"
+          <Link
+            to="/join"
             className="bg-[#641e31] text-white px-4 py-2 rounded text-xs tracking-widest uppercase font-bold hover:bg-[#7a2540] transition-colors"
           >
             Join Us
-          </a>
+          </Link>
         </nav>
       </div>
     </header>

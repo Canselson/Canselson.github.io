@@ -1,11 +1,13 @@
+import { useState, useEffect } from 'react'
 import { Link, NavLink, Outlet, Navigate } from 'react-router-dom'
-import { CalendarDays, Images, LogOut } from 'lucide-react'
+import { CalendarDays, Images, MessageSquare, LogOut } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 
 const NAV_ITEMS = [
-  { to: '/admin',         label: 'Calendar', icon: CalendarDays, end: true  },
-  { to: '/admin/gallery', label: 'Gallery',  icon: Images,       end: false },
+  { to: '/admin',          label: 'Calendar', icon: CalendarDays,   end: true  },
+  { to: '/admin/gallery',  label: 'Gallery',  icon: Images,         end: false },
+  { to: '/admin/messages', label: 'Messages', icon: MessageSquare,  end: false },
 ]
 
 export default function AdminLayout() {
@@ -32,6 +34,26 @@ export default function AdminLayout() {
 }
 
 function AdminNav({ email }) {
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    async function fetchUnread() {
+      const { count } = await supabase
+        .from('contact_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('read', false)
+      setUnreadCount(count ?? 0)
+    }
+    fetchUnread()
+
+    const channel = supabase
+      .channel('unread-messages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contact_messages' }, fetchUnread)
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
   async function signOut() {
     await supabase.auth.signOut()
   }
@@ -55,7 +77,7 @@ function AdminNav({ email }) {
                 to={to}
                 end={end}
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
+                  `relative flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
                     isActive
                       ? 'bg-[#00436b] text-white'
                       : 'text-white/40 hover:text-white hover:bg-white/5'
@@ -64,6 +86,12 @@ function AdminNav({ email }) {
               >
                 <Icon size={13} />
                 {label}
+                {label === 'Messages' && unreadCount > 0 && (
+                  <span className="relative flex h-2 w-2 ml-0.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#641e31] opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-[#641e31]" />
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>
