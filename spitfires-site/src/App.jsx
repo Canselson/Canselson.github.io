@@ -8,6 +8,7 @@ import FixturesPage from './pages/FixturesPage'
 import MatchReportPage from './pages/MatchReportPage'
 import GalleryPage from './pages/GalleryPage'
 import AlbumPage from './pages/AlbumPage'
+import AboutPage from './pages/AboutPage'
 import LoginPage from './pages/admin/LoginPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import CalendarAdmin from './pages/admin/CalendarAdmin'
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="/report/:eventId"     element={<MatchReportPage />} />
           <Route path="/gallery"             element={<GalleryPage />} />
           <Route path="/gallery/:albumId"    element={<AlbumPage />} />
+          <Route path="/about"               element={<AboutPage />} />
           <Route path="/teams/:teamSlug"     element={<TeamPage />} />
         </Route>
 
@@ -109,7 +111,7 @@ function Navbar() {
           <Link to="/calendar" className="hover:text-white transition-colors">Calendar</Link>
           <Link to="/fixtures" className="hover:text-white transition-colors">Fixtures</Link>
           <Link to="/gallery" className="hover:text-white transition-colors">Gallery</Link>
-          <a href="#" className="hover:text-white transition-colors">Committee</a>
+          <Link to="/about" className="hover:text-white transition-colors">About</Link>
           <a
             href="#"
             className="bg-[#641e31] text-white px-4 py-2 rounded text-xs tracking-widest uppercase font-bold hover:bg-[#7a2540] transition-colors"
@@ -202,11 +204,32 @@ function Hero() {
             View Fixtures
           </Link>
           <Link
-            to="/gallery"
+            to="/about"
             className="bg-[#641e31] hover:bg-[#7a2540] text-white font-bold px-8 py-3 rounded-sm uppercase tracking-widest text-sm transition-colors"
           >
-            Gallery
+            About Us
           </Link>
+        </div>
+
+        {/* Social / external links */}
+        <div className="flex items-center justify-center gap-4 mt-8">
+          {[
+            { href: 'https://www.instagram.com/southamptonspitfires/', src: '/Instagram_logo_2016.svg.png', alt: 'Instagram' },
+            { href: 'https://buiha.org/club/southampton',              src: '/buiha_logo.png',              alt: 'BUIHA'     },
+            { href: 'https://myspitfires.club/',                       src: '/logo.png',                    alt: 'My Spitfires' },
+            { href: 'https://www.youtube.com/@southamptonspitfires',   src: '/youtube-logo.png',            alt: 'YouTube'   },
+          ].map(({ href, src, alt }) => (
+            <a
+              key={href}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={alt}
+              className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/25 transition-colors flex items-center justify-center overflow-hidden p-1.5"
+            >
+              <img src={src} alt={alt} className="w-full h-full object-contain" />
+            </a>
+          ))}
         </div>
       </div>
       <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#0a0f1a] to-transparent" />
