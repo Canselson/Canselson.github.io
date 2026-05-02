@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Upload, Save } from 'lucide-react'
+import { Upload, Save, Sparkles } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { parseDGS } from '../../lib/parseDGS'
 
@@ -21,9 +21,11 @@ export default function ReportAdmin() {
   const [dgsData,    setDgsData]    = useState(null)
   const [reportText, setReportText] = useState('')
   const [loading,    setLoading]    = useState(true)
-  const [saving,     setSaving]     = useState(false)
-  const [saveStatus, setSaveStatus] = useState(null)  // null | 'saved' | 'error'
-  const [parseError, setParseError] = useState(null)
+  const [saving,        setSaving]        = useState(false)
+  const [saveStatus,    setSaveStatus]    = useState(null)
+  const [parseError,    setParseError]    = useState(null)
+  const [generating,    setGenerating]    = useState(false)
+  const [generateError, setGenerateError] = useState(null)
   const [tab,        setTab]        = useState('goals')
   const fileRef = useRef()
 
@@ -57,6 +59,33 @@ export default function ReportAdmin() {
       }
     }
     reader.readAsText(file)
+  }
+
+  async function generateReport() {
+    setGenerating(true)
+    setGenerateError(null)
+    try {
+      const res = await fetch('/api/generate-report', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          homeTeamName: dgsData.homeTeamName,
+          awayTeamName: dgsData.awayTeamName,
+          homeScore:    dgsData.homeScore,
+          awayScore:    dgsData.awayScore,
+          goals:        dgsData.goals,
+          penalties:    dgsData.penalties,
+          homeGoalie:   dgsData.homeGoalie,
+          awayGoalie:   dgsData.awayGoalie,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Generation failed')
+      setReportText(json.text)
+    } catch (err) {
+      setGenerateError(err.message)
+    }
+    setGenerating(false)
   }
 
   async function save() {
@@ -185,16 +214,33 @@ export default function ReportAdmin() {
 
         {/* Report narrative */}
         <div className="bg-[#111827] border border-white/10 rounded-xl p-5">
-          <p className="text-white/50 text-xs font-black uppercase tracking-widest mb-3">
-            Report Narrative (optional)
-          </p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-white/50 text-xs font-black uppercase tracking-widest">
+              Report Narrative (optional)
+            </p>
+            {dgsData && (
+              <button
+                onClick={generateReport}
+                disabled={generating}
+                className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#7ec8e3] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Sparkles size={12} />
+                {generating ? 'Generating…' : 'Generate with AI'}
+              </button>
+            )}
+          </div>
           <textarea
             value={reportText}
             onChange={e => setReportText(e.target.value)}
             rows={8}
-            placeholder="Write a match report here…"
+            placeholder={dgsData ? 'Click "Generate with AI" above, or write manually…' : 'Write a match report here…'}
             className="w-full bg-[#0a0f1a] border border-white/10 rounded-lg px-4 py-3 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-white/25 resize-y transition-colors"
           />
+          {generateError && (
+            <p className="text-red-400 text-xs mt-2 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
+              {generateError}
+            </p>
+          )}
         </div>
 
         {/* Save row */}
