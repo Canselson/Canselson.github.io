@@ -3,9 +3,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const apiKey = process.env.GEMINI_API_KEY
+  const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY is not configured' })
+    return res.status(500).json({ error: 'GROQ_API_KEY is not configured' })
   }
 
   const { homeTeamName, awayTeamName, homeScore, awayScore, goals, penalties, homeGoalie, awayGoalie } = req.body
@@ -17,27 +17,29 @@ export default async function handler(req, res) {
   const prompt = buildPrompt({ homeTeamName, awayTeamName, homeScore, awayScore, goals, penalties, homeGoalie, awayGoalie })
 
   try {
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.75, maxOutputTokens: 700 },
-        }),
-      }
-    )
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model:       'llama-3.3-70b-versatile',
+        messages:    [{ role: 'user', content: prompt }],
+        temperature: 0.75,
+        max_tokens:  700,
+      }),
+    })
 
-    if (!geminiRes.ok) {
-      const err = await geminiRes.json().catch(() => ({}))
-      return res.status(502).json({ error: err?.error?.message ?? 'Gemini API error' })
+    if (!groqRes.ok) {
+      const err = await groqRes.json().catch(() => ({}))
+      return res.status(502).json({ error: err?.error?.message ?? 'Groq API error' })
     }
 
-    const json = await geminiRes.json()
-    const text = json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    const json = await groqRes.json()
+    const text = json.choices?.[0]?.message?.content ?? ''
 
-    if (!text) return res.status(502).json({ error: 'Empty response from Gemini' })
+    if (!text) return res.status(502).json({ error: 'Empty response from Groq' })
 
     return res.status(200).json({ text: text.trim() })
   } catch (err) {
