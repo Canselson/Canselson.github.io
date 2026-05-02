@@ -7,21 +7,29 @@ export const GOAL_TYPE_LABELS = {
 }
 
 export const OFFENCE_LABELS = {
-  TRIP: 'Tripping',
-  HOOK: 'Hooking',
-  ROUG: 'Roughing',
-  HIGS: 'High Sticking',
-  INT:  'Interference',
-  BOAR: 'Boarding',
-  CROS: 'Cross Checking',
-  HOLD: 'Holding',
-  SLAS: 'Slashing',
-  CHEC: 'Checking from Behind',
-  ELBW: 'Elbowing',
-  CHAR: 'Charging',
-  UNSM: 'Unsportsmanlike Conduct',
-  MISC: 'Misconduct',
-  GM:   'Game Misconduct',
+  TRIP:  'Tripping',
+  HOOK:  'Hooking',
+  ROUG:  'Roughing',
+  HIGS:  'High Sticking',
+  INTRF: 'Interference',
+  INT:   'Interference',
+  BOAR:  'Boarding',
+  CROS:  'Cross Checking',
+  HOLD:  'Holding',
+  SLAS:  'Slashing',
+  CHEC:  'Checking from Behind',
+  ELBW:  'Elbowing',
+  CHAR:  'Charging',
+  UNSM:  'Unsportsmanlike Conduct',
+  MISC:  'Misconduct',
+  GM:    'Game Misconduct',
+  BDYCH: 'Body Checking',
+  EMBEL: 'Embellishment',
+  KNEEI: 'Kneeing',
+  SPEAR: 'Spearing',
+  FITE:  'Fighting',
+  DELAY: 'Delay of Game',
+  TOOMS: 'Too Many Men',
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
@@ -43,8 +51,18 @@ export function parseDGS(raw) {
   for (const p of homeRoster) playerMap[p.id] = { ...p, team: 'home' }
   for (const p of awayRoster) playerMap[p.id] = { ...p, team: 'away' }
 
-  const goals      = parseGoals(sections['4'] ?? [], playerMap)
-  const penalties  = parsePenalties(sections['7'] ?? [], playerMap)
+  // %4 = home goals, %5 = away goals — team is determined by section, not a data field
+  const goals = [
+    ...parseGoals(sections['4'] ?? [], playerMap, 'home'),
+    ...parseGoals(sections['5'] ?? [], playerMap, 'away'),
+  ].sort((a, b) => timeToSecs(a.cumulativeTime) - timeToSecs(b.cumulativeTime))
+
+  // %6 = home penalties, %7 = away penalties
+  const penalties = [
+    ...parsePenalties(sections['6'] ?? [], playerMap),
+    ...parsePenalties(sections['7'] ?? [], playerMap),
+  ].sort((a, b) => timeToSecs(a.cumulativeTime) - timeToSecs(b.cumulativeTime))
+
   const homeGoalie = parseGoalie(sections['8']?.[0], playerMap)
   const awayGoalie = parseGoalie(sections['9']?.[0], playerMap)
 
@@ -100,10 +118,10 @@ function parseRoster(lines) {
   })
 }
 
-// ─── Goals (%4) ───────────────────────────────────────────────────────────────
-// cumulativeTime, scorerID, assist1ID|null, assist2ID|null, type, team(1=home/2=away), UUID
+// ─── Goals (%4 = home, %5 = away) ────────────────────────────────────────────
+// cumulativeTime, scorerID, assist1ID|null, assist2ID|null, type, _, UUID
 
-function parseGoals(lines, playerMap) {
+function parseGoals(lines, playerMap, team) {
   return lines.map(line => {
     const p    = line.split(',').map(s => s.trim())
     const a1Id = p[2] !== 'null' ? p[2] : null
@@ -118,12 +136,12 @@ function parseGoals(lines, playerMap) {
       assist2:        a2Id ? (playerMap[a2Id] ?? null) : null,
       type,
       typeLabel:      GOAL_TYPE_LABELS[type] ?? type,
-      team:           p[5] === '1' ? 'home' : 'away',
+      team,
     }
   })
 }
 
-// ─── Penalties (%7) ───────────────────────────────────────────────────────────
+// ─── Penalties (%6 = home, %7 = away) ────────────────────────────────────────
 // offenceCode, givenAt, playerID, minutes, penaltyStart, penaltyEnd, UUID
 
 function parsePenalties(lines, playerMap) {
@@ -132,22 +150,22 @@ function parsePenalties(lines, playerMap) {
     const player = playerMap[p[2]] ?? null
     const code   = p[0]
     return {
-      offenceCode:  code,
-      offenceLabel: OFFENCE_LABELS[code] ?? code,
+      offenceCode:    code,
+      offenceLabel:   OFFENCE_LABELS[code] ?? code,
       cumulativeTime: p[1],
-      period:       getPeriod(p[1]),
-      periodTime:   getPeriodTime(p[1]),
+      period:         getPeriod(p[1]),
+      periodTime:     getPeriodTime(p[1]),
       player,
-      team:         player?.team ?? null,
-      minutes:      parseInt(p[3]) || 0,
-      start:        p[4],
-      end:          p[5],
+      team:           player?.team ?? null,
+      minutes:        parseInt(p[3]) || 0,
+      start:          p[4],
+      end:            p[5],
     }
   })
 }
 
-// ─── Goalie (%8 / %9) ─────────────────────────────────────────────────────────
-// playerID, TOI, P1shots, P1goals, P2shots, P2goals, P3shots, P3goals
+// ─── Goalie (%8 = home, %9 = away) ───────────────────────────────────────────
+// playerID, TOI, P1shots, P1goalsAgainst, P2shots, P2goalsAgainst, P3shots, P3goalsAgainst
 
 function parseGoalie(line, playerMap) {
   if (!line) return null
@@ -175,6 +193,12 @@ function parseGoalie(line, playerMap) {
 
 // ─── Time helpers ─────────────────────────────────────────────────────────────
 // Times in .dgs are cumulative game clock. Periods are 3×20 min.
+
+function timeToSecs(timeStr) {
+  if (!timeStr) return 0
+  const [m, s] = timeStr.split(':').map(Number)
+  return (m || 0) * 60 + (s || 0)
+}
 
 function getPeriod(timeStr) {
   if (!timeStr) return 1
