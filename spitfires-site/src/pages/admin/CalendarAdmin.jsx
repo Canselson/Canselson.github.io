@@ -37,6 +37,7 @@ export default function CalendarAdmin() {
   const [events,       setEvents]       = useState([])
   const [loading,      setLoading]      = useState(true)
   const [activeTab,    setActiveTab]    = useState('upcoming')
+  const [activeTeam,   setActiveTeam]   = useState(null)
   const [panelEvent,   setPanelEvent]   = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
 
@@ -58,8 +59,14 @@ export default function CalendarAdmin() {
   function afterDelete()    { setDeleteTarget(null); loadEvents() }
 
   const now = new Date()
-  const upcoming = events.filter(ev => new Date(ev.starts_at) >= now)
-  const past     = events.filter(ev => new Date(ev.starts_at) <  now)
+
+  // Team filter: non-game events (no team field) are shown for all filters
+  const filtered = activeTeam
+    ? events.filter(ev => ev.team === activeTeam || ev.type !== 'game')
+    : events
+
+  const upcoming = filtered.filter(ev => new Date(ev.starts_at) >= now)
+  const past     = filtered.filter(ev => new Date(ev.starts_at) <  now)
   const pending  = past.filter(ev =>
     ev.type === 'game' && (!ev.match_reports || ev.match_reports.length === 0)
   )
@@ -84,6 +91,19 @@ export default function CalendarAdmin() {
         >
           <Plus size={14} /> Add Event
         </button>
+      </div>
+
+      {/* Team filter */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        <TeamPill label="All Teams" active={activeTeam === null} onClick={() => setActiveTeam(null)} />
+        {TEAMS.map(t => (
+          <TeamPill
+            key={t.slug}
+            label={t.name}
+            active={activeTeam === t.slug}
+            onClick={() => setActiveTeam(prev => prev === t.slug ? null : t.slug)}
+          />
+        ))}
       </div>
 
       {/* Tabs */}
@@ -532,6 +552,21 @@ function DeleteModal({ event, onCancel, onDeleted }) {
 }
 
 // ─── Small reusable pieces ────────────────────────────────────────────────────
+
+function TeamPill({ label, active, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${
+        active
+          ? 'bg-white/20 text-white'
+          : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
+      }`}
+    >
+      {label}
+    </button>
+  )
+}
 
 function Field({ label, children }) {
   return (
