@@ -37,7 +37,7 @@ export default function CalendarAdmin() {
   const [events,       setEvents]       = useState([])
   const [loading,      setLoading]      = useState(true)
   const [activeTab,    setActiveTab]    = useState('upcoming')
-  const [activeTeam,   setActiveTeam]   = useState(null)
+  const [activeType,   setActiveType]   = useState(null)
   const [panelEvent,   setPanelEvent]   = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
 
@@ -60,9 +60,8 @@ export default function CalendarAdmin() {
 
   const now = new Date()
 
-  // Team filter: non-game events (no team field) are shown for all filters
-  const filtered = activeTeam
-    ? events.filter(ev => ev.team === activeTeam || ev.type !== 'game')
+  const filtered = activeType
+    ? events.filter(ev => ev.type === activeType)
     : events
 
   const upcoming = filtered.filter(ev => new Date(ev.starts_at) >= now)
@@ -93,16 +92,31 @@ export default function CalendarAdmin() {
         </button>
       </div>
 
-      {/* Team filter */}
+      {/* Event type filter */}
       <div className="flex flex-wrap gap-2 mb-6">
-        <TeamPill label="All Teams" active={activeTeam === null} onClick={() => setActiveTeam(null)} />
-        {TEAMS.map(t => (
-          <TeamPill
-            key={t.slug}
-            label={t.name}
-            active={activeTeam === t.slug}
-            onClick={() => setActiveTeam(prev => prev === t.slug ? null : t.slug)}
-          />
+        <button
+          onClick={() => setActiveType(null)}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${
+            activeType === null
+              ? 'bg-white/20 text-white'
+              : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
+          }`}
+        >
+          All
+        </button>
+        {Object.entries(EVENT_TYPES).map(([type, { label, color }]) => (
+          <button
+            key={type}
+            onClick={() => setActiveType(prev => prev === type ? null : type)}
+            className="px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all"
+            style={
+              activeType === type
+                ? { backgroundColor: color, color: '#fff' }
+                : { backgroundColor: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.38)' }
+            }
+          >
+            {label}
+          </button>
         ))}
       </div>
 
@@ -552,21 +566,6 @@ function DeleteModal({ event, onCancel, onDeleted }) {
 }
 
 // ─── Small reusable pieces ────────────────────────────────────────────────────
-
-function TeamPill({ label, active, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${
-        active
-          ? 'bg-white/20 text-white'
-          : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
-      }`}
-    >
-      {label}
-    </button>
-  )
-}
 
 function Field({ label, children }) {
   return (
