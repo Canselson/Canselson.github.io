@@ -6,31 +6,6 @@ export const GOAL_TYPE_LABELS = {
   EN: 'Empty Net',
 }
 
-export const OFFENCE_LABELS = {
-  TRIP:  'Tripping',
-  HOOK:  'Hooking',
-  ROUG:  'Roughing',
-  HIGS:  'High Sticking',
-  INTRF: 'Interference',
-  INT:   'Interference',
-  BOAR:  'Boarding',
-  CROS:  'Cross Checking',
-  HOLD:  'Holding',
-  SLAS:  'Slashing',
-  CHEC:  'Checking from Behind',
-  ELBW:  'Elbowing',
-  CHAR:  'Charging',
-  UNSM:  'Unsportsmanlike Conduct',
-  MISC:  'Misconduct',
-  GM:    'Game Misconduct',
-  BDYCH: 'Body Checking',
-  EMBEL: 'Embellishment',
-  KNEEI: 'Kneeing',
-  SPEAR: 'Spearing',
-  FITE:  'Fighting',
-  DELAY: 'Delay of Game',
-  TOOMS: 'Too Many Men',
-}
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
@@ -151,7 +126,7 @@ function parsePenalties(lines, playerMap) {
     const code   = p[0]
     return {
       offenceCode:    code,
-      offenceLabel:   OFFENCE_LABELS[code] ?? code,
+      offenceLabel:   code,
       cumulativeTime: p[1],
       period:         getPeriod(p[1]),
       periodTime:     getPeriodTime(p[1]),
