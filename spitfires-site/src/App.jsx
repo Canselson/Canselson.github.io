@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Link, useParams, Outlet } from 'react-router-dom'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Menu, X } from 'lucide-react'
 import { AuthProvider } from './context/AuthContext'
 import { supabase } from './lib/supabase'
 import CalendarPage from './pages/CalendarPage'
@@ -83,47 +83,78 @@ function Layout() {
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 
 function Navbar() {
+  const [open, setOpen] = useState(false)
+  const close = () => setOpen(false)
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0f1a]/90 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-3">
+        <Link to="/" className="flex items-center gap-3" onClick={close}>
           <img src="/logo.png" alt="Spitfires" className="h-10 w-auto" />
           <span className="font-bold text-lg tracking-widest uppercase text-white hidden sm:block">
             Southampton Spitfires
           </span>
         </Link>
 
-        <nav className="flex items-center gap-7 text-xs font-semibold tracking-widest uppercase text-white/60">
-          {/* Teams dropdown */}
+        {/* Desktop nav */}
+        <nav className="hidden md:flex items-center gap-7 text-xs font-semibold tracking-widest uppercase text-white/60">
           <div className="relative group">
             <button className="flex items-center gap-1 uppercase hover:text-white transition-colors py-1">
               Teams <ChevronDown size={12} className="mt-0.5" />
             </button>
             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-[#111827] border border-white/10 rounded-xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 min-w-[140px] shadow-2xl">
               {teams.map(t => (
-                <Link
-                  key={t.slug}
-                  to={`/teams/${t.slug}`}
-                  className="block px-5 py-3 text-xs tracking-widest hover:bg-white/10 hover:text-white transition-colors border-b border-white/5 last:border-0"
-                >
+                <Link key={t.slug} to={`/teams/${t.slug}`}
+                  className="block px-5 py-3 text-xs tracking-widest hover:bg-white/10 hover:text-white transition-colors border-b border-white/5 last:border-0">
                   {t.name}
                 </Link>
               ))}
             </div>
           </div>
-
           <Link to="/calendar" className="hover:text-white transition-colors">Calendar</Link>
           <Link to="/fixtures" className="hover:text-white transition-colors">Fixtures</Link>
-          <Link to="/gallery" className="hover:text-white transition-colors">Gallery</Link>
-          <Link to="/about" className="hover:text-white transition-colors">About</Link>
-          <Link
-            to="/join"
-            className="bg-[#641e31] text-white px-4 py-2 rounded text-xs tracking-widest uppercase font-bold hover:bg-[#7a2540] transition-colors"
-          >
+          <Link to="/gallery"  className="hover:text-white transition-colors">Gallery</Link>
+          <Link to="/about"    className="hover:text-white transition-colors">About</Link>
+          <Link to="/join"
+            className="bg-[#641e31] text-white px-4 py-2 rounded text-xs tracking-widest uppercase font-bold hover:bg-[#7a2540] transition-colors">
             Join Us
           </Link>
         </nav>
+
+        {/* Mobile hamburger */}
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="md:hidden text-white/60 hover:text-white transition-colors p-1"
+          aria-label="Toggle menu"
+        >
+          {open ? <X size={22} /> : <Menu size={22} />}
+        </button>
       </div>
+
+      {/* Mobile menu */}
+      {open && (
+        <div className="md:hidden border-t border-white/10 bg-[#0a0f1a]">
+          <nav className="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-0.5 text-xs font-semibold tracking-widest uppercase">
+            <Link to="/calendar" onClick={close} className="px-3 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Calendar</Link>
+            <Link to="/fixtures" onClick={close} className="px-3 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Fixtures</Link>
+            <Link to="/gallery"  onClick={close} className="px-3 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Gallery</Link>
+            <Link to="/about"    onClick={close} className="px-3 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors">About</Link>
+            <div className="h-px bg-white/10 my-2" />
+            <p className="text-white/20 text-xs px-3 pb-1">Teams</p>
+            {teams.map(t => (
+              <Link key={t.slug} to={`/teams/${t.slug}`} onClick={close}
+                className="px-3 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                {t.name}
+              </Link>
+            ))}
+            <div className="h-px bg-white/10 my-2" />
+            <Link to="/join" onClick={close}
+              className="bg-[#641e31] hover:bg-[#7a2540] text-white text-center px-4 py-3 rounded-lg tracking-widest uppercase font-bold transition-colors">
+              Join Us
+            </Link>
+          </nav>
+        </div>
+      )}
     </header>
   )
 }
