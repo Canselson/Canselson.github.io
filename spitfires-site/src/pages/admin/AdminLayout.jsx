@@ -23,6 +23,10 @@ export default function AdminLayout() {
 
   if (!session) return <Navigate to="/admin/login" replace />
 
+  if (session.user.user_metadata?.must_change_password) {
+    return <ForcePasswordChange />
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0f1a] text-white">
       <AdminNav email={session.user.email} />
@@ -124,6 +128,64 @@ function AdminNav({ email }) {
         <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
       )}
     </>
+  )
+}
+
+// ─── Forced password change (first login) ────────────────────────────────────
+
+function ForcePasswordChange() {
+  const [password, setPassword] = useState('')
+  const [confirm,  setConfirm]  = useState('')
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState(null)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (password !== confirm) { setError('Passwords do not match'); return }
+    if (password.length < 6)  { setError('Password must be at least 6 characters'); return }
+    setLoading(true)
+    setError(null)
+    const { error } = await supabase.auth.updateUser({
+      password,
+      data: { must_change_password: false },
+    })
+    if (error) { setError(error.message); setLoading(false) }
+    // On success, AuthContext receives USER_UPDATED and re-renders AdminLayout normally
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0a0f1a] flex items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        <div className="flex justify-center mb-8">
+          <img src="/logo.png" alt="Spitfires" className="h-16 w-auto" />
+        </div>
+        <div className="bg-[#111827] border border-white/10 rounded-2xl p-8">
+          <h1 className="text-white text-xl font-black uppercase tracking-widest mb-1">Set Your Password</h1>
+          <p className="text-white/40 text-xs mb-8">
+            Choose a password before continuing to the admin panel.
+          </p>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-white/50 text-xs font-bold uppercase tracking-widest">New Password</span>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                required className={inputClass} placeholder="••••••••" autoFocus />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-white/50 text-xs font-bold uppercase tracking-widest">Confirm Password</span>
+              <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)}
+                required className={inputClass} placeholder="••••••••" />
+            </label>
+            {error && (
+              <p className="text-red-400 text-xs bg-red-400/10 border border-red-400/20 rounded-lg px-4 py-3">{error}</p>
+            )}
+            <button type="submit" disabled={loading}
+              className="mt-2 bg-[#00436b] hover:bg-[#005a8f] disabled:opacity-50 text-white font-bold uppercase tracking-widest text-sm py-3 rounded-lg transition-colors">
+              {loading ? 'Saving…' : 'Set Password & Continue'}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
   )
 }
 
