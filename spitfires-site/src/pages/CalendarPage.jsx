@@ -61,14 +61,15 @@ export default function CalendarPage() {
 
   function eventsOnDay(day) {
     if (!day) return []
-    const cellStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), day, 0, 0, 0, 0)
-    const cellEnd   = new Date(viewDate.getFullYear(), viewDate.getMonth(), day, 23, 59, 59, 999)
+    const cellDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day)
     return filteredEvents.filter(ev => {
-      const evStart = new Date(ev.starts_at)
-      const evEnd   = ev.ends_at
-        ? new Date(ev.ends_at)
-        : new Date(evStart.getTime() + (ev.duration_hours ?? 2) * 3_600_000)
-      return evStart <= cellEnd && evEnd >= cellStart
+      const evStart     = new Date(ev.starts_at)
+      const evStartDate = new Date(evStart.getFullYear(), evStart.getMonth(), evStart.getDate())
+      if (!ev.ends_at) return evStartDate.getTime() === cellDate.getTime()
+      const evEnd     = new Date(ev.ends_at)
+      const evEndDate = new Date(evEnd.getFullYear(), evEnd.getMonth(), evEnd.getDate())
+      if (evStartDate.getTime() === evEndDate.getTime()) return evStartDate.getTime() === cellDate.getTime()
+      return cellDate >= evStartDate && cellDate <= evEndDate
     })
   }
 
