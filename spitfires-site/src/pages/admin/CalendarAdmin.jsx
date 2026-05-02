@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Pencil, Trash2, X, AlertTriangle, FileText } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, AlertTriangle, FileText, Upload } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 const EVENT_TYPES = {
@@ -34,15 +34,16 @@ const EMPTY_FORM = {
 
 export default function CalendarAdmin() {
   const navigate = useNavigate()
-  const [events,      setEvents]      = useState([])
-  const [loading,     setLoading]     = useState(true)
-  const [panelEvent,  setPanelEvent]  = useState(null)  // null=closed, EMPTY_FORM=new, populated=edit
-  const [deleteTarget, setDeleteTarget] = useState(null) // event to confirm-delete
+  const [events,       setEvents]       = useState([])
+  const [loading,      setLoading]      = useState(true)
+  const [activeTab,    setActiveTab]    = useState('upcoming')
+  const [panelEvent,   setPanelEvent]   = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   const loadEvents = useCallback(async () => {
     const { data } = await supabase
       .from('events')
-      .select('*')
+      .select('*, match_reports(id)')
       .order('starts_at', { ascending: true })
     setEvents(data || [])
     setLoading(false)
@@ -59,11 +60,20 @@ export default function CalendarAdmin() {
   const now = new Date()
   const upcoming = events.filter(ev => new Date(ev.starts_at) >= now)
   const past     = events.filter(ev => new Date(ev.starts_at) <  now)
+  const pending  = past.filter(ev =>
+    ev.type === 'game' && (!ev.match_reports || ev.match_reports.length === 0)
+  )
+
+  const tabs = [
+    { key: 'upcoming', label: 'Upcoming' },
+    { key: 'past',     label: 'Past'     },
+    { key: 'pending',  label: 'Pending', count: pending.length },
+  ]
 
   return (
     <div>
       {/* Page header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-white text-2xl font-black uppercase tracking-tight">Calendar</h1>
           <p className="text-white/40 text-sm mt-1">Manage events, fixtures and socials</p>
@@ -76,25 +86,58 @@ export default function CalendarAdmin() {
         </button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 border-b border-white/10 pb-0">
+        {tabs.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest rounded-t-lg transition-colors border-b-2 -mb-px ${
+              activeTab === tab.key
+                ? 'text-white border-[#00436b]'
+                : 'text-white/35 border-transparent hover:text-white/60'
+            }`}
+          >
+            {tab.label}
+            {tab.count > 0 && (
+              <span className="bg-amber-500/20 text-amber-400 text-xs font-black px-1.5 py-0.5 rounded-full leading-none">
+                {tab.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <LoadingRows />
       ) : (
         <>
-          <EventSection
-            title="Upcoming"
-            events={upcoming}
-            onEdit={openEdit}
-            onDelete={setDeleteTarget}
-            emptyText="No upcoming events — add one above."
-          />
-          {past.length > 0 && (
+          {activeTab === 'upcoming' && (
             <EventSection
-              title="Past"
+              events={upcoming}
+              onEdit={openEdit}
+              onDelete={setDeleteTarget}
+              emptyText="No upcoming events — add one above."
+            />
+          )}
+          {activeTab === 'past' && (
+            <EventSection
               events={[...past].reverse()}
               onEdit={openEdit}
               onDelete={setDeleteTarget}
               onReport={ev => navigate(`/admin/reports/${ev.id}`)}
               dimmed
+              emptyText="No past events yet."
+            />
+          )}
+          {activeTab === 'pending' && (
+            <EventSection
+              events={[...pending].reverse()}
+              onEdit={openEdit}
+              onDelete={setDeleteTarget}
+              onReport={ev => navigate(`/admin/reports/${ev.id}`)}
+              pending
+              emptyText="All past games have reports uploaded."
             />
           )}
         </>
@@ -123,13 +166,9 @@ export default function CalendarAdmin() {
 
 // ─── Event list section ───────────────────────────────────────────────────────
 
-function EventSection({ title, events, onEdit, onDelete, onReport, emptyText, dimmed = false }) {
+function EventSection({ events, onEdit, onDelete, onReport, emptyText, dimmed = false, pending = false }) {
   return (
     <div className="mb-10">
-      <div className="flex items-center gap-3 mb-3">
-        <h2 className="text-xs font-black uppercase tracking-widest text-white/30">{title}</h2>
-        <div className="h-px flex-1 bg-white/5" />
-      </div>
       {events.length === 0 && emptyText ? (
         <p className="text-white/20 text-sm py-4">{emptyText}</p>
       ) : (
@@ -142,6 +181,7 @@ function EventSection({ title, events, onEdit, onDelete, onReport, emptyText, di
               onDelete={onDelete}
               onReport={onReport}
               dimmed={dimmed}
+              pending={pending}
             />
           ))}
         </div>
@@ -150,18 +190,18 @@ function EventSection({ title, events, onEdit, onDelete, onReport, emptyText, di
   )
 }
 
-function EventRow({ event, onEdit, onDelete, onReport, dimmed }) {
-  const start  = new Date(event.starts_at)
-  const end    = event.ends_at ? new Date(event.ends_at) : null
+function EventRow({ event, onEdit, onDelete, onReport, dimmed, pending }) {
+  const start   = new Date(event.starts_at)
+  const end     = event.ends_at ? new Date(event.ends_at) : null
   const isMulti = end && end.toDateString() !== start.toDateString()
-  const cfg    = EVENT_TYPES[event.type] ?? { label: event.type, color: '#555' }
-  const title  = event.type === 'game' ? `vs ${event.opponent}` : event.title
+  const cfg     = EVENT_TYPES[event.type] ?? { label: event.type, color: '#555' }
+  const title   = event.type === 'game' ? `vs ${event.opponent}` : event.title
 
   return (
     <div
-      className={`flex items-center gap-4 bg-[#111827] border border-white/10 rounded-xl px-4 py-3 ${
-        dimmed ? 'opacity-50' : ''
-      }`}
+      className={`flex items-center gap-4 bg-[#111827] rounded-xl px-4 py-3 border ${
+        pending ? 'border-amber-500/20' : 'border-white/10'
+      } ${dimmed ? 'opacity-50' : ''}`}
     >
       {/* Date */}
       <div className="w-20 shrink-0 text-xs text-white/40">
@@ -207,8 +247,16 @@ function EventRow({ event, onEdit, onDelete, onReport, dimmed }) {
       )}
 
       {/* Actions */}
-      <div className="flex gap-1 shrink-0 ml-auto">
-        {dimmed && event.type === 'game' && onReport && (
+      <div className="flex items-center gap-1 shrink-0 ml-auto">
+        {pending && onReport && (
+          <button
+            onClick={() => onReport(event)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
+          >
+            <Upload size={12} /> Upload
+          </button>
+        )}
+        {!pending && dimmed && event.type === 'game' && onReport && (
           <button
             onClick={() => onReport(event)}
             title="Edit match report"
