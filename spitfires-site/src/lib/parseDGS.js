@@ -34,8 +34,8 @@ export function parseDGS(raw) {
 
   // %6 = home penalties, %7 = away penalties
   const penalties = [
-    ...parsePenalties(sections['6'] ?? [], playerMap),
-    ...parsePenalties(sections['7'] ?? [], playerMap),
+    ...parsePenalties(sections['6'] ?? [], playerMap, 'home'),
+    ...parsePenalties(sections['7'] ?? [], playerMap, 'away'),
   ].sort((a, b) => timeToSecs(a.cumulativeTime) - timeToSecs(b.cumulativeTime))
 
   const homeGoalie = parseGoalie(sections['8']?.[0], playerMap)
@@ -119,11 +119,12 @@ function parseGoals(lines, playerMap, team) {
 // ─── Penalties (%6 = home, %7 = away) ────────────────────────────────────────
 // offenceCode, givenAt, playerID, minutes, penaltyStart, penaltyEnd, UUID
 
-function parsePenalties(lines, playerMap) {
+function parsePenalties(lines, playerMap, sectionTeam) {
   return lines.map(line => {
-    const p      = line.split(',').map(s => s.trim())
-    const player = playerMap[p[2]] ?? null
-    const code   = p[0]
+    const p       = line.split(',').map(s => s.trim())
+    const isBench = !p[2] || p[2] === 'null'
+    const player  = isBench ? { name: 'Bench', id: null, team: sectionTeam } : (playerMap[p[2]] ?? null)
+    const code    = p[0]
     return {
       offenceCode:    code,
       offenceLabel:   code,
@@ -131,7 +132,7 @@ function parsePenalties(lines, playerMap) {
       period:         getPeriod(p[1]),
       periodTime:     getPeriodTime(p[1]),
       player,
-      team:           player?.team ?? null,
+      team:           player?.team ?? sectionTeam,
       minutes:        parseInt(p[3]) || 0,
       start:          p[4],
       end:            p[5],
