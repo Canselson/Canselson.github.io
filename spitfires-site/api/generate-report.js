@@ -50,6 +50,13 @@ export default async function handler(req, res) {
 // ─── Prompt builder ───────────────────────────────────────────────────────────
 
 function buildPrompt({ homeTeamName, awayTeamName, homeScore, awayScore, goals = [], penalties = [], homeGoalie, awayGoalie }) {
+  const spitfiresHome = /spitfire/i.test(homeTeamName)
+  const spitfiresName = spitfiresHome ? homeTeamName : awayTeamName
+  const opponentName  = spitfiresHome ? awayTeamName : homeTeamName
+  const spitfiresScore = spitfiresHome ? homeScore : awayScore
+  const opponentScore  = spitfiresHome ? awayScore : homeScore
+  const result = spitfiresScore > opponentScore ? 'win' : spitfiresScore < opponentScore ? 'loss' : 'draw'
+
   const goalLines = goals.map(g => {
     const team    = g.team === 'home' ? homeTeamName : awayTeamName
     const assists = [g.assist1?.name, g.assist2?.name].filter(Boolean).join(' & ')
@@ -67,7 +74,15 @@ function buildPrompt({ homeTeamName, awayTeamName, homeScore, awayScore, goals =
     awayGoalie ? `  ${awayTeamName}: ${awayGoalie.player?.name ?? 'Unknown'} — ${awayGoalie.saves} saves from ${awayGoalie.totalShots} shots (${awayGoalie.savePercent}% SV%)` : null,
   ].filter(Boolean).join('\n') || '  No data'
 
-  return `Write a match report for a university ice hockey club website. Write 2–3 paragraphs in third person. Be enthusiastic but factual. Cover the flow of the game, key scorers, and standout moments. Do not include a headline. Do not use markdown or bullet points — plain text only.
+  const resultContext = result === 'win'
+    ? `The Spitfires won ${spitfiresScore}–${opponentScore}. Open with an upbeat, celebratory tone.`
+    : result === 'loss'
+    ? `The Spitfires lost ${spitfiresScore}–${opponentScore}. Open with an honest but respectful acknowledgement of the defeat.`
+    : `The match ended in a ${spitfiresScore}–${opponentScore} draw. Open by noting the hard-fought point.`
+
+  return `Write a match report for the Southampton Spitfires university ice hockey club website. Write 2–3 paragraphs in third person.
+
+The report must be written entirely from the Spitfires' perspective — they are the subject of every paragraph. ${resultContext} Focus on how the Spitfires performed: their goals, their goalie, their discipline or penalties, and any standout individual moments. The opponent (${opponentName}) should be mentioned only as context. Do not include a headline. Do not use markdown or bullet points — plain text only.
 
 Match: ${homeTeamName} ${homeScore}–${awayScore} ${awayTeamName}
 
