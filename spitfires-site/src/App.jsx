@@ -16,6 +16,7 @@ import CalendarAdmin from './pages/admin/CalendarAdmin'
 import ReportAdmin from './pages/admin/ReportAdmin'
 import GalleryAdmin from './pages/admin/GalleryAdmin'
 import MessagesAdmin from './pages/admin/MessagesAdmin'
+import FilesAdmin from './pages/admin/FilesAdmin'
 import './App.css'
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="gallery" element={<GalleryAdmin />} />
           <Route path="gallery/:albumId" element={<GalleryAdmin />} />
           <Route path="messages" element={<MessagesAdmin />} />
+          <Route path="files"    element={<FilesAdmin />} />
         </Route>
       </Routes>
       </AuthProvider>
