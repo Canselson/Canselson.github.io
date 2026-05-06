@@ -551,6 +551,7 @@ function Footer() {
         </div>
         <div className="flex items-center gap-4">
           <Link to="/documents" className="text-white/30 hover:text-white/60 text-xs transition-colors">Club Documents</Link>
+          <a href="/privacy-policy-print.html" target="_blank" rel="noopener noreferrer" className="text-white/30 hover:text-white/60 text-xs transition-colors">Privacy Policy</a>
           <p className="text-white/30 text-xs">© {new Date().getFullYear()} · Southampton University</p>
           <Link to="/admin" className="text-white/15 hover:text-white/40 text-xs transition-colors">Admin</Link>
         </div>

@@ -138,7 +138,13 @@ export default function JoinPage() {
           {submitting ? 'Sending…' : 'Send Message'}
         </button>
 
-        <p className="text-white/20 text-xs text-center">Fields marked * are required.</p>
+        <p className="text-white/20 text-xs text-center">
+          Fields marked * are required. By submitting this form you agree to our{' '}
+          <a href="/privacy-policy-print.html" target="_blank" rel="noopener noreferrer"
+            className="underline hover:text-white/40 transition-colors">
+            Privacy Policy
+          </a>.
+        </p>
       </form>
     </div>
   )
