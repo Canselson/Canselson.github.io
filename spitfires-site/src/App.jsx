@@ -17,6 +17,7 @@ import ReportAdmin from './pages/admin/ReportAdmin'
 import GalleryAdmin from './pages/admin/GalleryAdmin'
 import MessagesAdmin from './pages/admin/MessagesAdmin'
 import FilesAdmin from './pages/admin/FilesAdmin'
+import DocumentsPage from './pages/DocumentsPage'
 import './App.css'
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="/gallery/:albumId"    element={<AlbumPage />} />
           <Route path="/about"               element={<AboutPage />} />
           <Route path="/join"                element={<JoinPage />} />
+          <Route path="/documents"           element={<DocumentsPage />} />
           <Route path="/teams/:teamSlug"     element={<TeamPage />} />
         </Route>
 
@@ -548,6 +550,7 @@ function Footer() {
           <span className="text-white/40 text-sm">Southampton Spitfires Ice Hockey Club</span>
         </div>
         <div className="flex items-center gap-4">
+          <Link to="/documents" className="text-white/30 hover:text-white/60 text-xs transition-colors">Club Documents</Link>
           <p className="text-white/30 text-xs">© {new Date().getFullYear()} · Southampton University</p>
           <Link to="/admin" className="text-white/15 hover:text-white/40 text-xs transition-colors">Admin</Link>
         </div>

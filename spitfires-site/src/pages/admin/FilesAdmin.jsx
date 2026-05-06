@@ -12,9 +12,10 @@ export default function FilesAdmin() {
   const [expandedId, setExpandedId]       = useState(null)
   const [versions, setVersions]           = useState({})
   const [versionsLoading, setVersionsLoading] = useState({})
-  const [docModal, setDocModal]           = useState(null) // null | { mode: 'add'|'edit', doc? }
-  const [deleteConfirm, setDeleteConfirm] = useState(null) // null | { type: 'doc'|'version', ... }
-  const [uploadingFor, setUploadingFor]   = useState(null) // docId
+  const [docModal, setDocModal]             = useState(null) // null | { mode: 'add'|'edit', doc? }
+  const [deleteConfirm, setDeleteConfirm]   = useState(null) // null | { type: 'doc'|'version', ... }
+  const [visibilityConfirm, setVisibilityConfirm] = useState(null) // null | doc (public→private only)
+  const [uploadingFor, setUploadingFor]     = useState(null) // docId
   const [uploading, setUploading]         = useState(false)
   const fileInputRef = useRef(null)
 
@@ -24,7 +25,7 @@ export default function FilesAdmin() {
     setLoading(true)
     const { data } = await supabase
       .from('club_documents')
-      .select('id, title, description, created_at, document_versions(count)')
+      .select('id, title, description, is_public, created_at, document_versions(count)')
       .order('created_at', { ascending: false })
     setDocuments(data ?? [])
     setLoading(false)
@@ -48,6 +49,20 @@ export default function FilesAdmin() {
       setExpandedId(docId)
       if (!versions[docId]) fetchVersions(docId)
     }
+  }
+
+  function handleVisibilityToggle(doc) {
+    if (doc.is_public) {
+      setVisibilityConfirm(doc)
+    } else {
+      applyVisibility(doc, true)
+    }
+  }
+
+  async function applyVisibility(doc, isPublic) {
+    await supabase.from('club_documents').update({ is_public: isPublic }).eq('id', doc.id)
+    setDocuments(d => d.map(x => x.id === doc.id ? { ...x, is_public: isPublic } : x))
+    setVisibilityConfirm(null)
   }
 
   function triggerUpload(docId) {
@@ -186,6 +201,7 @@ export default function FilesAdmin() {
               onEdit={() => setDocModal({ mode: 'edit', doc })}
               onDelete={() => setDeleteConfirm({ type: 'doc', doc })}
               onUpload={() => triggerUpload(doc.id)}
+              onToggleVisibility={() => handleVisibilityToggle(doc)}
               onDownload={downloadVersion}
               onDeleteVersion={v => setDeleteConfirm({ type: 'version', version: v })}
             />
@@ -201,6 +217,16 @@ export default function FilesAdmin() {
           initialDoc={docModal.doc}
           onClose={() => setDocModal(null)}
           onSaved={() => { setDocModal(null); fetchDocuments() }}
+        />
+      )}
+
+      {visibilityConfirm && (
+        <ConfirmModal
+          message={`Make "${visibilityConfirm.title}" private? It will no longer appear on the public documents page.`}
+          confirmLabel="Make Private"
+          confirmClass="bg-[#00436b] hover:bg-[#005a8f]"
+          onConfirm={() => applyVisibility(visibilityConfirm, false)}
+          onClose={() => setVisibilityConfirm(null)}
         />
       )}
 
@@ -225,7 +251,7 @@ export default function FilesAdmin() {
 
 // ─── Document Card ────────────────────────────────────────────────────────────
 
-function DocumentCard({ doc, expanded, versions, versionsLoading, onToggle, onEdit, onDelete, onUpload, onDownload, onDeleteVersion }) {
+function DocumentCard({ doc, expanded, versions, versionsLoading, onToggle, onEdit, onDelete, onUpload, onDownload, onDeleteVersion, onToggleVisibility }) {
   const versionCount = doc.document_versions?.[0]?.count ?? 0
 
   return (
@@ -241,6 +267,18 @@ function DocumentCard({ doc, expanded, versions, versionsLoading, onToggle, onEd
         <span className="text-white/25 text-xs shrink-0 hidden sm:block">
           {versionCount} version{versionCount !== 1 ? 's' : ''}
         </span>
+        <button
+          onClick={onToggleVisibility}
+          title={doc.is_public ? 'Public — click to make private' : 'Private — click to make public'}
+          className="flex items-center gap-1.5 shrink-0 group"
+        >
+          <span className={`text-xs hidden lg:block transition-colors ${doc.is_public ? 'text-[#c0e8f8]' : 'text-white/20 group-hover:text-white/40'}`}>
+            {doc.is_public ? 'Public' : 'Private'}
+          </span>
+          <div className={`relative w-8 h-4 rounded-full transition-colors ${doc.is_public ? 'bg-[#00436b]' : 'bg-white/15 group-hover:bg-white/25'}`}>
+            <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${doc.is_public ? 'translate-x-4' : 'translate-x-0'}`} />
+          </div>
+        </button>
         <div className="flex items-center gap-0.5 shrink-0">
           <button onClick={onUpload} title="Upload new version"
             className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors">
@@ -384,7 +422,7 @@ function DocModal({ mode, initialDoc, onClose, onSaved }) {
 
 // ─── Confirm Modal ────────────────────────────────────────────────────────────
 
-function ConfirmModal({ message, onConfirm, onClose }) {
+function ConfirmModal({ message, onConfirm, onClose, confirmLabel = 'Delete', confirmClass = 'bg-[#641e31] hover:bg-[#7a2540]' }) {
   const [loading, setLoading] = useState(false)
   async function confirm() { setLoading(true); await onConfirm() }
   return (
@@ -399,8 +437,8 @@ function ConfirmModal({ message, onConfirm, onClose }) {
             Cancel
           </button>
           <button onClick={confirm} disabled={loading}
-            className="flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-white bg-[#641e31] hover:bg-[#7a2540] disabled:opacity-50 transition-colors">
-            {loading ? 'Deleting…' : 'Delete'}
+            className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-white disabled:opacity-50 transition-colors ${confirmClass}`}>
+            {loading ? 'Saving…' : confirmLabel}
           </button>
         </div>
       </div>
