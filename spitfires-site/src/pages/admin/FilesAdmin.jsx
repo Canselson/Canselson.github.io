@@ -53,9 +53,9 @@ export default function FilesAdmin() {
 
   function handleVisibilityToggle(doc) {
     if (doc.is_public) {
-      setVisibilityConfirm(doc)
+      applyVisibility(doc, false)
     } else {
-      applyVisibility(doc, true)
+      setVisibilityConfirm(doc)
     }
   }
 
@@ -222,10 +222,10 @@ export default function FilesAdmin() {
 
       {visibilityConfirm && (
         <ConfirmModal
-          message={`Make "${visibilityConfirm.title}" private? It will no longer appear on the public documents page.`}
-          confirmLabel="Make Private"
+          message={`Make "${visibilityConfirm.title}" public? It will appear on the public documents page.`}
+          confirmLabel="Make Public"
           confirmClass="bg-[#00436b] hover:bg-[#005a8f]"
-          onConfirm={() => applyVisibility(visibilityConfirm, false)}
+          onConfirm={() => applyVisibility(visibilityConfirm, true)}
           onClose={() => setVisibilityConfirm(null)}
         />
       )}
