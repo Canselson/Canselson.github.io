@@ -299,15 +299,36 @@ RULES for using the above data:
 - Stats already include today's game. Use the exact numbers shown — never say "a notable figure" or any vague phrase.
 - A player with 1G has scored once this season. Say "his first of the season for the ${teamLabel}" or "his 1st goal of the season for the ${teamLabel}".
 - Whenever you mention a player's goal or point tally for the season, always specify "for the ${teamLabel}" — players may also play for other teams.
-- If a next fixture is listed above, you MUST name the specific opponent when you mention it. Never say only "upcoming fixture" or "next match" without naming who they play.
+- The next fixture must only be mentioned in the final paragraph. If a next fixture is listed, you MUST name the specific opponent and date when you mention it — never say only "upcoming fixture" or "next match" without naming who they play.
 - If next fixture says "none scheduled", do not mention an upcoming game at all.`
   }
 
-  return `Write a match report for the Southampton Spitfires university ice hockey club website. Write 2–3 paragraphs in third person.
+  const homeAwayContext = seasonContext
+    ? (spitfiresHome ? 'The Spitfires were at home.' : 'The Spitfires were playing away from home.')
+    : ''
 
-The report must be written entirely from the Spitfires' perspective — they are the subject of every paragraph. ${resultContext} Focus on how the Spitfires performed: their goals, their goalie, their discipline or penalties, and any standout individual moments. The opponent (${opponentName}) should be mentioned only as context. Do not include a headline. Do not use markdown or bullet points — plain text only.
+  return `Write a match report for the Southampton Spitfires university ice hockey club website. Write exactly 3 paragraphs in third person. Do not include a headline. Do not use markdown or bullet points — plain text only. The report must be written entirely from the Spitfires' perspective. The opponent (${opponentName}) should be mentioned only as context.
 
-Where season context is provided below, weave in relevant details naturally. Only include season details if they genuinely add colour; never force them in.
+${homeAwayContext} ${resultContext}
+
+Follow this exact structure:
+
+Paragraph 1 — Opening & performance: State the result and scoreline. Mention the home/away context. Cover the overall flow of the game and any notable period-by-period momentum shifts. Highlight 1–2 standout players with their goals and assists. If season form data is available and not the first game, briefly reference current form.
+
+Paragraph 2 — Stats & discipline: Cover the Spitfires' goalie performance (saves, save percentage). Discuss any penalties — who took them, when, and whether they impacted the game. Mention power play or penalty kill situations if relevant.
+
+Paragraph 3 — Takeaways & next game: Summarise what the result means for the team — positives to build on or lessons to learn. If a next fixture is provided, close by naming the specific opponent and date. Do not mention the next fixture anywhere except this paragraph.
+
+Match: ${homeTeamName} ${homeScore}–${awayScore} ${awayTeamName}
+
+Goals:
+${goalLines}
+
+Penalties:
+${penLines}
+
+Netminders:
+${goalieLines}
 
 Match: ${homeTeamName} ${homeScore}–${awayScore} ${awayTeamName}
 
