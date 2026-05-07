@@ -70,9 +70,12 @@ export default function CalendarAdmin() {
     : events
 
   const upcoming = filtered.filter(ev => new Date(ev.starts_at) >= now)
-  const past     = filtered.filter(ev => new Date(ev.starts_at) <  now)
-  const pending  = past.filter(ev =>
+  const allPast  = filtered.filter(ev => new Date(ev.starts_at) <  now)
+  const pending  = allPast.filter(ev =>
     ev.type === 'game' && (!ev.match_reports || ev.match_reports.length === 0)
+  )
+  const past     = allPast.filter(ev =>
+    !(ev.type === 'game' && (!ev.match_reports || ev.match_reports.length === 0))
   )
 
   const tabs = [
