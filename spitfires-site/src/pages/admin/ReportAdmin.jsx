@@ -28,6 +28,8 @@ export default function ReportAdmin() {
   const [generateError, setGenerateError] = useState(null)
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [removing,      setRemoving]      = useState(false)
+  const [forfeitMode,   setForfeitMode]   = useState(false)
+  const [forfeitedBy,   setForfeitedBy]   = useState('opponent')
   const [tab,        setTab]        = useState('goals')
   const fileRef = useRef()
 
@@ -41,7 +43,15 @@ export default function ReportAdmin() {
       if (rpt) {
         setReport(rpt)
         setReportText(rpt.report_text ?? '')
-        setDgsData(rpt.dgs_data ?? null)
+        if (rpt.dgs_data) {
+          setDgsData(rpt.dgs_data)
+        } else if (rpt.home_score != null) {
+          // No gamesheet but scores present — was saved as a forfeit
+          setForfeitMode(true)
+          const spitfiresHome  = ev?.home_away === 'home'
+          const spitfiresScore = spitfiresHome ? rpt.home_score : rpt.away_score
+          setForfeitedBy(spitfiresScore === 5 ? 'opponent' : 'us')
+        }
       }
       setLoading(false)
     }
@@ -117,6 +127,31 @@ export default function ReportAdmin() {
     setSaving(false)
   }
 
+  async function saveForfeit() {
+    setSaving(true)
+    setSaveStatus(null)
+    const spitfiresHome = event.home_away === 'home'
+    const spitfiresWin  = forfeitedBy === 'opponent'
+    const home_score    = spitfiresHome === spitfiresWin ? 5 : 0
+    const away_score    = spitfiresHome === spitfiresWin ? 0 : 5
+    const report_text   = spitfiresWin
+      ? `Match awarded 5-0 to the Spitfires. ${event.opponent} forfeited.`
+      : `Match forfeited by the Spitfires. Result recorded as a 0-5 loss.`
+    const payload = { event_id: eventId, report_text, dgs_data: null, home_score, away_score }
+    const { data, error } = report
+      ? await supabase.from('match_reports').update(payload).eq('id', report.id).select().single()
+      : await supabase.from('match_reports').insert(payload).select().single()
+    if (error) {
+      setSaveStatus('error')
+    } else {
+      setReport(data)
+      setReportText(report_text)
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus(null), 3000)
+    }
+    setSaving(false)
+  }
+
   async function removeReport() {
     setRemoving(true)
     await supabase.from('match_reports').delete().eq('id', report.id)
@@ -149,45 +184,141 @@ export default function ReportAdmin() {
 
       <div className="flex flex-col gap-5">
 
-        {/* DGS upload */}
+        {/* DGS upload / Forfeit */}
         <div className="bg-[#111827] border border-white/10 rounded-xl p-5">
-          <p className="text-white/50 text-xs font-black uppercase tracking-widest mb-4">Gamesheet (.dgs)</p>
-          {dgsData ? (
-            <div className="flex items-center justify-between gap-4 flex-wrap">
+          {/* Mode toggle */}
+          <div className="flex gap-2 mb-4">
+            {[
+              { key: false, label: 'Gamesheet' },
+              { key: true,  label: 'Forfeit'   },
+            ].map(({ key, label }) => (
+              <button
+                key={String(key)}
+                type="button"
+                onClick={() => { setForfeitMode(key); setDgsData(null); setParseError(null) }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                  forfeitMode === key
+                    ? 'bg-white/20 text-white'
+                    : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {!forfeitMode ? (
+            <>
+              {dgsData ? (
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <p className="text-white font-bold">
+                      {dgsData.homeTeamName}{' '}
+                      <span className="text-[#7ec8e3]">{dgsData.homeScore}</span>
+                      <span className="text-white/30 mx-2">–</span>
+                      <span className="text-[#e89aaa]">{dgsData.awayScore}</span>
+                      {' '}{dgsData.awayTeamName}
+                    </p>
+                    <p className="text-white/30 text-xs mt-0.5">
+                      {dgsData.goals.length} goals · {dgsData.penalties.length} penalties · parsed OK
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => { setDgsData(null); fileRef.current?.click() }}
+                    className="text-xs font-bold uppercase tracking-widest text-white/30 hover:text-white transition-colors"
+                  >
+                    Replace
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  className="w-full border-2 border-dashed border-white/10 rounded-xl py-10 text-white/25 hover:border-white/25 hover:text-white/50 transition-colors flex flex-col items-center gap-2"
+                >
+                  <Upload size={22} />
+                  <span className="text-xs font-bold uppercase tracking-widest">Upload .dgs file</span>
+                </button>
+              )}
+              <input ref={fileRef} type="file" accept=".dgs" className="hidden" onChange={handleDgsFile} />
+              {parseError && <p className="text-red-400 text-xs mt-3">{parseError}</p>}
+            </>
+          ) : (
+            <div className="flex flex-col gap-4">
               <div>
+                <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-2">Who forfeited?</p>
+                <div className="flex gap-2">
+                  {[
+                    { key: 'opponent', label: `${event.opponent} (opponent)` },
+                    { key: 'us',       label: 'The Spitfires'               },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setForfeitedBy(key)}
+                      className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
+                        forfeitedBy === key
+                          ? key === 'us'
+                            ? 'bg-[#641e31] text-white'
+                            : 'bg-[#00436b] text-white'
+                          : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-[#0d1520] rounded-lg px-4 py-3">
+                <p className="text-white/40 text-xs uppercase tracking-widest mb-0.5">Result</p>
                 <p className="text-white font-bold">
-                  {dgsData.homeTeamName}{' '}
-                  <span className="text-[#7ec8e3]">{dgsData.homeScore}</span>
-                  <span className="text-white/30 mx-2">–</span>
-                  <span className="text-[#e89aaa]">{dgsData.awayScore}</span>
-                  {' '}{dgsData.awayTeamName}
+                  {forfeitedBy === 'opponent'
+                    ? `Spitfires win 5–0`
+                    : `Spitfires lose 0–5`}
                 </p>
                 <p className="text-white/30 text-xs mt-0.5">
-                  {dgsData.goals.length} goals · {dgsData.penalties.length} penalties · parsed OK
+                  {forfeitedBy === 'opponent'
+                    ? `${event.opponent} forfeited — awarded as a 5-0 win`
+                    : 'Spitfires forfeited — recorded as a 0-5 loss'}
                 </p>
               </div>
               <button
-                onClick={() => { setDgsData(null); fileRef.current?.click() }}
-                className="text-xs font-bold uppercase tracking-widest text-white/30 hover:text-white transition-colors"
+                onClick={saveForfeit}
+                disabled={saving}
+                className="w-full py-3 rounded-lg text-xs font-black uppercase tracking-widest text-white bg-[#00436b] hover:bg-[#005a8f] disabled:opacity-40 transition-colors"
               >
-                Replace
+                {saving ? 'Saving…' : 'Save as Forfeit'}
               </button>
+              {saveStatus === 'saved' && (
+                <p className="text-green-400 text-xs font-bold uppercase tracking-widest text-center">Saved!</p>
+              )}
+              {saveStatus === 'error' && (
+                <p className="text-red-400 text-xs font-bold uppercase tracking-widest text-center">Save failed — check console</p>
+              )}
+              {report && !confirmRemove && (
+                <button
+                  onClick={() => setConfirmRemove(true)}
+                  className="flex items-center justify-center gap-1.5 text-white/25 hover:text-red-400 text-xs font-bold uppercase tracking-widest transition-colors"
+                >
+                  <Trash2 size={12} /> Remove Report
+                </button>
+              )}
+              {report && confirmRemove && (
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-white/40 text-xs">Move back to pending?</span>
+                  <button onClick={removeReport} disabled={removing} className="text-red-400 hover:text-red-300 text-xs font-bold uppercase tracking-widest disabled:opacity-40">
+                    {removing ? 'Removing…' : 'Yes, remove'}
+                  </button>
+                  <button onClick={() => setConfirmRemove(false)} className="text-white/25 hover:text-white text-xs font-bold uppercase tracking-widest">
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
-          ) : (
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="w-full border-2 border-dashed border-white/10 rounded-xl py-10 text-white/25 hover:border-white/25 hover:text-white/50 transition-colors flex flex-col items-center gap-2"
-            >
-              <Upload size={22} />
-              <span className="text-xs font-bold uppercase tracking-widest">Upload .dgs file</span>
-            </button>
           )}
-          <input ref={fileRef} type="file" accept=".dgs" className="hidden" onChange={handleDgsFile} />
-          {parseError && <p className="text-red-400 text-xs mt-3">{parseError}</p>}
         </div>
 
         {/* DGS preview tabs */}
-        {dgsData && (
+        {dgsData && !forfeitMode && (
           <div className="bg-[#111827] border border-white/10 rounded-xl overflow-hidden">
             <div className="flex border-b border-white/10 px-4 gap-1 pt-2">
               {[
@@ -223,7 +354,8 @@ export default function ReportAdmin() {
           </div>
         )}
 
-        {/* Report narrative */}
+        {/* Report narrative — hidden for forfeits */}
+        {!forfeitMode &&
         <div className="bg-[#111827] border border-white/10 rounded-xl p-5">
           <div className="flex items-center justify-between mb-3">
             <p className="text-white/50 text-xs font-black uppercase tracking-widest">
@@ -252,9 +384,10 @@ export default function ReportAdmin() {
               {generateError}
             </p>
           )}
-        </div>
+        </div>}
 
-        {/* Save row */}
+        {/* Save row — hidden for forfeits (forfeit card has its own save) */}
+        {!forfeitMode &&
         <div className="flex items-center gap-4 flex-wrap">
           <button
             onClick={save}
@@ -305,7 +438,7 @@ export default function ReportAdmin() {
               View Public Page →
             </Link>
           )}
-        </div>
+        </div>}
       </div>
     </div>
   )
