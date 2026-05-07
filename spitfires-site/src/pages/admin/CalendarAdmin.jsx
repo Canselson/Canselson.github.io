@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Pencil, Trash2, X, AlertTriangle, FileText, Upload, Copy } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, AlertTriangle, FileText, Upload, Copy, FileImage, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 const EVENT_TYPES = {
@@ -40,6 +40,7 @@ export default function CalendarAdmin() {
   const [activeType,   setActiveType]   = useState(null)
   const [panelEvent,   setPanelEvent]   = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [showImport,   setShowImport]   = useState(false)
 
   const loadEvents = useCallback(async () => {
     const { data } = await supabase
@@ -88,12 +89,20 @@ export default function CalendarAdmin() {
           <h1 className="text-white text-2xl font-black uppercase tracking-tight">Calendar</h1>
           <p className="text-white/40 text-sm mt-1">Manage events, fixtures and socials</p>
         </div>
-        <button
-          onClick={openNew}
-          className="flex items-center gap-2 bg-[#00436b] hover:bg-[#005a8f] text-white text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors"
-        >
-          <Plus size={14} /> Add Event
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors"
+          >
+            <FileImage size={14} /> Import
+          </button>
+          <button
+            onClick={openNew}
+            className="flex items-center gap-2 bg-[#00436b] hover:bg-[#005a8f] text-white text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors"
+          >
+            <Plus size={14} /> Add Event
+          </button>
+        </div>
       </div>
 
       {/* Event type filter */}
@@ -199,6 +208,14 @@ export default function CalendarAdmin() {
           event={deleteTarget}
           onCancel={() => setDeleteTarget(null)}
           onDeleted={afterDelete}
+        />
+      )}
+
+      {/* Import fixtures */}
+      {showImport && (
+        <ImportFixturesModal
+          onClose={() => setShowImport(false)}
+          onImported={() => { setShowImport(false); loadEvents() }}
         />
       )}
     </div>
@@ -528,6 +545,271 @@ function EventFormPanel({ initial, onClose, onSaved }) {
             </button>
           </div>
         </form>
+      </div>
+    </>
+  )
+}
+
+// ─── Import fixtures modal ────────────────────────────────────────────────────
+
+async function resizeImageToBase64(file, maxDim = 1400) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height))
+      const canvas = document.createElement('canvas')
+      canvas.width  = Math.round(img.width  * scale)
+      canvas.height = Math.round(img.height * scale)
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+      resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1])
+    }
+    img.onerror = reject
+    img.src = url
+  })
+}
+
+function ImportFixturesModal({ onClose, onImported }) {
+  const [team,       setTeam]       = useState('a-team')
+  const [parsing,    setParsing]    = useState(false)
+  const [parseError, setParseError] = useState(null)
+  const [rows,       setRows]       = useState(null) // null = not yet parsed
+  const [importing,  setImporting]  = useState(false)
+  const fileRef = useRef()
+
+  function updateRow(i, field, value) {
+    setRows(prev => prev.map((r, idx) => idx === i ? { ...r, [field]: value } : r))
+  }
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setParsing(true)
+    setParseError(null)
+    setRows(null)
+    try {
+      const image    = await resizeImageToBase64(file)
+      const mimeType = file.type || 'image/jpeg'
+      const res      = await fetch('/api/import-fixtures', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ image, mimeType, team }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Parse failed')
+      if (json.fixtures.length === 0) throw new Error('No fixtures found in image — try a clearer photo')
+      setRows(json.fixtures.map(f => ({ ...f, included: true })))
+    } catch (err) {
+      setParseError(err.message)
+    }
+    setParsing(false)
+    // reset so same file can be re-uploaded if needed
+    e.target.value = ''
+  }
+
+  async function handleImport() {
+    setImporting(true)
+    const toInsert = rows
+      .filter(r => r.included)
+      .map(r => ({
+        type:        'game',
+        team,
+        title:       `vs ${r.opponent}`,
+        opponent:    r.opponent,
+        home_away:   r.home_away,
+        starts_at:   new Date(`${r.date}T${r.time}`).toISOString(),
+        ends_at:     null,
+        location:    r.location || null,
+        description: null,
+      }))
+    await supabase.from('events').insert(toInsert)
+    onImported()
+  }
+
+  const includedCount = rows?.filter(r => r.included).length ?? 0
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="min-h-full flex items-start justify-center p-4 pt-10 pb-10">
+          <div className="w-full max-w-2xl bg-[#111827] border border-white/10 rounded-2xl overflow-hidden">
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+              <div>
+                <h2 className="text-white font-black uppercase tracking-widest text-sm">Import Fixtures</h2>
+                <p className="text-white/30 text-xs mt-0.5">Photo of a fixture list → events</p>
+              </div>
+              <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 flex flex-col gap-6">
+
+              {/* Team selector */}
+              <Field label="Team">
+                <div className="flex flex-wrap gap-2">
+                  {TEAMS.map(t => (
+                    <button
+                      key={t.slug}
+                      type="button"
+                      onClick={() => { setTeam(t.slug); setRows(null); setParseError(null) }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                        team === t.slug
+                          ? 'bg-white/20 text-white'
+                          : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+
+              {/* Upload area */}
+              <Field label="Fixture list photo">
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={parsing}
+                  className="w-full border-2 border-dashed border-white/10 rounded-xl py-8 text-white/25 hover:border-white/25 hover:text-white/50 disabled:opacity-40 transition-colors flex flex-col items-center gap-2"
+                >
+                  {parsing ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+                      <span className="text-xs font-bold uppercase tracking-widest">Parsing…</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileImage size={22} />
+                      <span className="text-xs font-bold uppercase tracking-widest">
+                        {rows ? 'Upload different photo' : 'Upload photo'}
+                      </span>
+                    </>
+                  )}
+                </button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFile}
+                />
+                {parseError && (
+                  <p className="text-red-400 text-xs bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
+                    {parseError}
+                  </p>
+                )}
+              </Field>
+
+              {/* Review table */}
+              {rows && (
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/50 text-xs font-bold uppercase tracking-widest">
+                      Review — {rows.length} fixture{rows.length !== 1 ? 's' : ''} found
+                    </span>
+                    <span className="text-white/30 text-xs">{includedCount} selected</span>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    {rows.map((row, i) => (
+                      <div
+                        key={i}
+                        className={`bg-[#0d1520] border rounded-xl p-3 flex flex-col gap-2 transition-opacity ${
+                          row.included ? 'border-white/10' : 'border-white/5 opacity-40'
+                        }`}
+                      >
+                        {/* Row top: checkbox + opponent + home/away */}
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => updateRow(i, 'included', !row.included)}
+                            className={`w-5 h-5 shrink-0 rounded border flex items-center justify-center transition-colors ${
+                              row.included
+                                ? 'bg-[#00436b] border-[#00436b]'
+                                : 'bg-transparent border-white/20'
+                            }`}
+                          >
+                            {row.included && <Check size={11} className="text-white" />}
+                          </button>
+                          <input
+                            type="text"
+                            value={row.opponent}
+                            onChange={e => updateRow(i, 'opponent', e.target.value)}
+                            placeholder="Opponent"
+                            className="flex-1 bg-transparent text-white text-sm font-semibold focus:outline-none placeholder:text-white/20"
+                          />
+                          <div className="flex gap-1 shrink-0">
+                            {['home', 'away'].map(v => (
+                              <button
+                                key={v}
+                                type="button"
+                                onClick={() => updateRow(i, 'home_away', v)}
+                                className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider transition-colors ${
+                                  row.home_away === v
+                                    ? 'bg-[#00436b] text-white'
+                                    : 'bg-white/5 text-white/30 hover:bg-white/10'
+                                }`}
+                              >
+                                {v}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Row bottom: date + time + location */}
+                        <div className="flex items-center gap-2 pl-8">
+                          <input
+                            type="date"
+                            value={row.date}
+                            onChange={e => updateRow(i, 'date', e.target.value)}
+                            className="bg-[#0a0f1a] border border-white/10 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-[#00436b] transition-colors"
+                          />
+                          <input
+                            type="time"
+                            value={row.time}
+                            onChange={e => updateRow(i, 'time', e.target.value)}
+                            className="bg-[#0a0f1a] border border-white/10 rounded-lg px-3 py-1.5 text-white text-xs w-28 focus:outline-none focus:border-[#00436b] transition-colors"
+                          />
+                          <input
+                            type="text"
+                            value={row.location}
+                            onChange={e => updateRow(i, 'location', e.target.value)}
+                            placeholder="Location (optional)"
+                            className="flex-1 bg-[#0a0f1a] border border-white/10 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-[#00436b] transition-colors placeholder:text-white/20"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="flex-1 py-3 rounded-lg text-xs font-bold uppercase tracking-widest text-white/50 bg-white/5 hover:bg-white/10 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleImport}
+                      disabled={importing || includedCount === 0}
+                      className="flex-1 py-3 rounded-lg text-xs font-bold uppercase tracking-widest text-white bg-[#00436b] hover:bg-[#005a8f] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {importing ? 'Importing…' : `Add ${includedCount} Fixture${includedCount !== 1 ? 's' : ''}`}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
       </div>
     </>
   )
