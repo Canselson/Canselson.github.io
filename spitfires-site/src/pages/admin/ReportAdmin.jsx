@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Upload, Save, Sparkles } from 'lucide-react'
+import { Upload, Save, Sparkles, Trash2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { parseDGS } from '../../lib/parseDGS'
 
@@ -26,6 +26,8 @@ export default function ReportAdmin() {
   const [parseError,    setParseError]    = useState(null)
   const [generating,    setGenerating]    = useState(false)
   const [generateError, setGenerateError] = useState(null)
+  const [confirmRemove, setConfirmRemove] = useState(false)
+  const [removing,      setRemoving]      = useState(false)
   const [tab,        setTab]        = useState('goals')
   const fileRef = useRef()
 
@@ -69,6 +71,7 @@ export default function ReportAdmin() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          eventId,
           homeTeamName: dgsData.homeTeamName,
           awayTeamName: dgsData.awayTeamName,
           homeScore:    dgsData.homeScore,
@@ -77,6 +80,8 @@ export default function ReportAdmin() {
           penalties:    dgsData.penalties,
           homeGoalie:   dgsData.homeGoalie,
           awayGoalie:   dgsData.awayGoalie,
+          homeRoster:   dgsData.homeRoster,
+          awayRoster:   dgsData.awayRoster,
         }),
       })
       const json = await res.json()
@@ -110,6 +115,12 @@ export default function ReportAdmin() {
       setTimeout(() => setSaveStatus(null), 3000)
     }
     setSaving(false)
+  }
+
+  async function removeReport() {
+    setRemoving(true)
+    await supabase.from('match_reports').delete().eq('id', report.id)
+    navigate('/admin')
   }
 
   if (loading) return <div className="text-white/40 text-sm animate-pulse">Loading…</div>
@@ -259,11 +270,37 @@ export default function ReportAdmin() {
           {saveStatus === 'error' && (
             <span className="text-red-400 text-xs font-bold uppercase tracking-widest">Save failed — check console</span>
           )}
-          {report && (
+          {report && !confirmRemove && (
+            <button
+              onClick={() => setConfirmRemove(true)}
+              className="flex items-center gap-1.5 text-white/25 hover:text-red-400 text-xs font-bold uppercase tracking-widest transition-colors ml-auto"
+            >
+              <Trash2 size={12} /> Remove Report
+            </button>
+          )}
+          {report && confirmRemove && (
+            <div className="flex items-center gap-3 ml-auto">
+              <span className="text-white/40 text-xs">Move back to pending?</span>
+              <button
+                onClick={removeReport}
+                disabled={removing}
+                className="text-red-400 hover:text-red-300 text-xs font-bold uppercase tracking-widest transition-colors disabled:opacity-40"
+              >
+                {removing ? 'Removing…' : 'Yes, remove'}
+              </button>
+              <button
+                onClick={() => setConfirmRemove(false)}
+                className="text-white/25 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          {report && !confirmRemove && (
             <Link
               to={`/report/${eventId}`}
               target="_blank"
-              className="text-white/30 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors ml-auto"
+              className="text-white/30 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors"
             >
               View Public Page →
             </Link>
