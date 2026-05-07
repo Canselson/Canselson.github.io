@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Pencil, Trash2, X, AlertTriangle, FileText, Upload } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, AlertTriangle, FileText, Upload, Copy } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 const EVENT_TYPES = {
@@ -54,6 +54,10 @@ export default function CalendarAdmin() {
 
   function openNew()        { setPanelEvent(EMPTY_FORM) }
   function openEdit(ev)     { setPanelEvent(eventToForm(ev)) }
+  function openDuplicate(ev) {
+    const form = eventToForm(ev)
+    setPanelEvent({ ...form, id: undefined, startDate: '', startTime: '', endDate: '', endTime: '' })
+  }
   function closePanel()     { setPanelEvent(null) }
   function afterSave()      { closePanel(); loadEvents() }
   function afterDelete()    { setDeleteTarget(null); loadEvents() }
@@ -150,6 +154,7 @@ export default function CalendarAdmin() {
             <EventSection
               events={upcoming}
               onEdit={openEdit}
+              onDuplicate={openDuplicate}
               onDelete={setDeleteTarget}
               emptyText="No upcoming events — add one above."
             />
@@ -158,6 +163,7 @@ export default function CalendarAdmin() {
             <EventSection
               events={[...past].reverse()}
               onEdit={openEdit}
+              onDuplicate={openDuplicate}
               onDelete={setDeleteTarget}
               onReport={ev => navigate(`/admin/reports/${ev.id}`)}
               dimmed
@@ -168,6 +174,7 @@ export default function CalendarAdmin() {
             <EventSection
               events={[...pending].reverse()}
               onEdit={openEdit}
+              onDuplicate={openDuplicate}
               onDelete={setDeleteTarget}
               onReport={ev => navigate(`/admin/reports/${ev.id}`)}
               pending
@@ -200,7 +207,7 @@ export default function CalendarAdmin() {
 
 // ─── Event list section ───────────────────────────────────────────────────────
 
-function EventSection({ events, onEdit, onDelete, onReport, emptyText, dimmed = false, pending = false }) {
+function EventSection({ events, onEdit, onDuplicate, onDelete, onReport, emptyText, dimmed = false, pending = false }) {
   return (
     <div className="mb-10">
       {events.length === 0 && emptyText ? (
@@ -212,6 +219,7 @@ function EventSection({ events, onEdit, onDelete, onReport, emptyText, dimmed = 
               key={ev.id}
               event={ev}
               onEdit={onEdit}
+              onDuplicate={onDuplicate}
               onDelete={onDelete}
               onReport={onReport}
               dimmed={dimmed}
@@ -224,7 +232,7 @@ function EventSection({ events, onEdit, onDelete, onReport, emptyText, dimmed = 
   )
 }
 
-function EventRow({ event, onEdit, onDelete, onReport, dimmed, pending }) {
+function EventRow({ event, onEdit, onDuplicate, onDelete, onReport, dimmed, pending }) {
   const start   = new Date(event.starts_at)
   const end     = event.ends_at ? new Date(event.ends_at) : null
   const isMulti = end && end.toDateString() !== start.toDateString()
@@ -299,6 +307,13 @@ function EventRow({ event, onEdit, onDelete, onReport, dimmed, pending }) {
             <FileText size={14} />
           </button>
         )}
+        <button
+          onClick={() => onDuplicate(event)}
+          title="Duplicate event"
+          className="p-2 rounded-lg text-white/40 hover:text-green-400 hover:bg-green-400/10 transition-colors"
+        >
+          <Copy size={14} />
+        </button>
         <button
           onClick={() => onEdit(event)}
           className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
