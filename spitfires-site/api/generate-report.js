@@ -297,7 +297,8 @@ ${playerRows}
 
 RULES for using the above data:
 - Stats already include today's game. Use the exact numbers shown — never say "a notable figure" or any vague phrase.
-- A player with 1G has scored once this season. Say "his first of the season" or "his 1st goal of the season".
+- A player with 1G has scored once this season. Say "his first of the season for the ${teamLabel}" or "his 1st goal of the season for the ${teamLabel}".
+- Whenever you mention a player's goal or point tally for the season, always specify "for the ${teamLabel}" — players may also play for other teams.
 - If a next fixture is listed above, you MUST name the specific opponent when you mention it. Never say only "upcoming fixture" or "next match" without naming who they play.
 - If next fixture says "none scheduled", do not mention an upcoming game at all.`
   }
