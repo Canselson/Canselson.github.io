@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     try {
       const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
       seasonContext = await buildSeasonContext(supabase, eventId, {
-        homeTeamName, awayTeamName, homeRoster, awayRoster,
+        homeTeamName, awayTeamName, homeScore, awayScore, homeRoster, awayRoster,
       })
     } catch (_) {
       // Non-fatal: generate without season context
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
 
 // ─── Season context builder ───────────────────────────────────────────────────
 
-async function buildSeasonContext(supabase, eventId, { homeTeamName, awayTeamName, homeRoster, awayRoster }) {
+async function buildSeasonContext(supabase, eventId, { homeTeamName, awayTeamName, homeScore, awayScore, homeRoster, awayRoster }) {
   const { data: event } = await supabase
     .from('events')
     .select('id, team, starts_at, opponent')
@@ -119,13 +119,14 @@ async function buildSeasonContext(supabase, eventId, { homeTeamName, awayTeamNam
     .limit(1)
     .maybeSingle()
 
-  // Only games that have dgs_data
+  // Only past games that have dgs_data
   const completedGames = (pastEvents || []).filter(ev => ev.match_reports?.[0]?.dgs_data)
 
   let wins = 0, draws = 0, losses = 0, gf = 0, ga = 0
-  const formArr   = []
+  const formArr     = []
   const playerStats = {} // name → { goals, assists, pim, gamesPlayed }
 
+  // Aggregate all prior completed games
   for (const game of completedGames) {
     const dgs = game.match_reports[0].dgs_data
 
@@ -153,20 +154,32 @@ async function buildSeasonContext(supabase, eventId, { homeTeamName, awayTeamNam
     }
   }
 
-  // Players who featured in today's game
-  const spitHomeToday = /spitfire/i.test(homeTeamName)
-  const todayRoster   = new Set(
-    (spitHomeToday ? (homeRoster ?? []) : (awayRoster ?? []))
-      .filter(p => p.dressed && !p.isNetminder)
-      .map(p => p.name)
-  )
+  // Merge today's game into stats so the table shows final season totals
+  const spitHomeToday    = /spitfire/i.test(homeTeamName)
+  const spitScoreToday   = spitHomeToday ? homeScore : awayScore
+  const oppScoreToday    = spitHomeToday ? awayScore : homeScore
+  const todayRosterArr   = (spitHomeToday ? (homeRoster ?? []) : (awayRoster ?? []))
 
-  // Also include players who played today but have no prior season stats
-  for (const name of todayRoster) {
-    if (!playerStats[name]) {
-      playerStats[name] = { goals: 0, assists: 0, pim: 0, gamesPlayed: 0 }
+  gf += spitScoreToday ?? 0
+  ga += oppScoreToday  ?? 0
+  if      (spitScoreToday > oppScoreToday) { wins++;   formArr.push('W') }
+  else if (spitScoreToday < oppScoreToday) { losses++; formArr.push('L') }
+  else                                      { draws++;  formArr.push('D') }
+
+  const todayNames = new Set()
+  for (const player of todayRosterArr) {
+    if (!player.name || player.isNetminder) continue
+    if (!playerStats[player.name]) {
+      playerStats[player.name] = { goals: 0, assists: 0, pim: 0, gamesPlayed: 0 }
     }
+    playerStats[player.name].goals       += player.goals   || 0
+    playerStats[player.name].assists     += player.assists || 0
+    playerStats[player.name].pim         += player.pim     || 0
+    playerStats[player.name].gamesPlayed += player.dressed ? 1 : 0
+    if (player.dressed) todayNames.add(player.name)
   }
+
+  const totalGames = completedGames.length + 1
 
   const allPlayers = Object.entries(playerStats)
     .map(([name, s]) => ({
@@ -176,11 +189,11 @@ async function buildSeasonContext(supabase, eventId, { homeTeamName, awayTeamNam
       a:     s.assists,
       pts:   s.goals + s.assists,
       pim:   s.pim,
-      today: todayRoster.has(name),
+      today: todayNames.has(name),
     }))
     .sort((a, b) => b.pts - a.pts || b.g - a.g)
 
-  // H2H record vs this opponent this season
+  // H2H record vs this opponent this season (including today)
   let h2hW = 0, h2hD = 0, h2hL = 0
   for (const game of completedGames) {
     if (game.opponent?.toLowerCase() !== event.opponent?.toLowerCase()) continue
@@ -192,11 +205,18 @@ async function buildSeasonContext(supabase, eventId, { homeTeamName, awayTeamNam
     else if (spitScore < oppScore) h2hL++
     else                           h2hD++
   }
+  // Include today's result in H2H
+  if (event.opponent) {
+    if      (spitScoreToday > oppScoreToday) h2hW++
+    else if (spitScoreToday < oppScoreToday) h2hL++
+    else                                      h2hD++
+  }
 
   return {
     teamLabel:   TEAMS[event.team] ?? event.team,
     seasonLabel: `${seasonYear}/${String(seasonYear + 1).slice(2)}`,
-    record:      { wins, draws, losses, gf, ga, gp: completedGames.length },
+    record:      { wins, draws, losses, gf, ga, gp: totalGames },
+    firstGame:   completedGames.length === 0,
     form:        formArr.slice(-5).join(' '),
     allPlayers,
     nextFixture,
@@ -239,8 +259,8 @@ function buildPrompt({ homeTeamName, awayTeamName, homeScore, awayScore, goals =
     : `The match ended in a ${spitfiresScore}–${opponentScore} draw. Open by noting the hard-fought point.`
 
   let seasonSection = ''
-  if (seasonContext?.record.gp > 0) {
-    const { teamLabel, seasonLabel, record, form, allPlayers, nextFixture, h2h, opponent } = seasonContext
+  if (seasonContext) {
+    const { teamLabel, seasonLabel, record, firstGame, form, allPlayers, nextFixture, h2h, opponent } = seasonContext
     const { wins, draws, losses, gf, ga, gp } = record
     const avgGF = (gf / gp).toFixed(1)
     const avgGA = (ga / gp).toFixed(1)
@@ -256,27 +276,37 @@ function buildPrompt({ homeTeamName, awayTeamName, homeScore, awayScore, goals =
           const loc = nextFixture.location ? ` at ${nextFixture.location}` : ''
           return `\nNext fixture: ${nextFixture.home_away === 'home' ? 'Home' : 'Away'} vs ${nextFixture.opponent} on ${d}${loc}`
         })()
-      : ''
+      : '\nNext fixture: none scheduled'
 
     const h2hLine = h2h
-      ? `\nRecord vs ${opponent} this season (before today): W${h2h.wins} D${h2h.draws} L${h2h.losses}`
+      ? `\nRecord vs ${opponent} this season: W${h2h.wins} D${h2h.draws} L${h2h.losses}`
+      : ''
+
+    const firstGameNote = firstGame
+      ? '\nNOTE: This is the first game of the season. Do not mention form, streaks, or prior momentum — there is no prior data.'
       : ''
 
     seasonSection = `
 
-Season context — ${teamLabel} ${seasonLabel} (games before today):
-Record: W${wins} D${draws} L${losses} | GF ${gf} GA ${ga} | Avg: ${avgGF} scored, ${avgGA} conceded | Form (last 5): ${form || 'first game of season'}${nextLine}${h2hLine}
+Season context — ${teamLabel} ${seasonLabel} (totals including today):
+Record: W${wins} D${draws} L${losses} | GF ${gf} GA ${ga} | Avg: ${avgGF} scored, ${avgGA} conceded | Form (last 5): ${form}${firstGameNote}${nextLine}${h2hLine}
 
-Player stats (pre-game season totals; ✓ = played today):
+Player season stats including today (✓ = played today):
   ${'Name'.padEnd(22)} GP   G   A  Pts  PIM
-${playerRows}`
+${playerRows}
+
+RULES for using the above data:
+- Stats already include today's game. Use the exact numbers shown — never say "a notable figure" or any vague phrase.
+- A player with 1G has scored once this season. Say "his first of the season" or "his 1st goal of the season".
+- If a next fixture is listed above, you MUST name the specific opponent when you mention it. Never say only "upcoming fixture" or "next match" without naming who they play.
+- If next fixture says "none scheduled", do not mention an upcoming game at all.`
   }
 
   return `Write a match report for the Southampton Spitfires university ice hockey club website. Write 2–3 paragraphs in third person.
 
 The report must be written entirely from the Spitfires' perspective — they are the subject of every paragraph. ${resultContext} Focus on how the Spitfires performed: their goals, their goalie, their discipline or penalties, and any standout individual moments. The opponent (${opponentName}) should be mentioned only as context. Do not include a headline. Do not use markdown or bullet points — plain text only.
 
-Where season context is provided below, weave in relevant details naturally — a player's goal tally for the season, the team's current form streak, or the upcoming fixture. Only include season details if they genuinely add colour; never force them in.
+Where season context is provided below, weave in relevant details naturally. Only include season details if they genuinely add colour; never force them in.
 
 Match: ${homeTeamName} ${homeScore}–${awayScore} ${awayTeamName}
 
