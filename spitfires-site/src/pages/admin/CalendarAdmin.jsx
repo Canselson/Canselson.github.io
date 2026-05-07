@@ -184,7 +184,7 @@ export default function CalendarAdmin() {
           )}
           {activeTab === 'pending' && (
             <EventSection
-              events={[...pending].reverse()}
+              events={pending}
               onEdit={openEdit}
               onDuplicate={openDuplicate}
               onDelete={setDeleteTarget}
