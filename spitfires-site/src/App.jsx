@@ -17,6 +17,7 @@ import ReportAdmin from './pages/admin/ReportAdmin'
 import GalleryAdmin from './pages/admin/GalleryAdmin'
 import MessagesAdmin from './pages/admin/MessagesAdmin'
 import FilesAdmin from './pages/admin/FilesAdmin'
+import StatsAdmin from './pages/admin/StatsAdmin'
 import DocumentsPage from './pages/DocumentsPage'
 import './App.css'
 
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="gallery/:albumId" element={<GalleryAdmin />} />
           <Route path="messages" element={<MessagesAdmin />} />
           <Route path="files"    element={<FilesAdmin />} />
+          <Route path="stats"    element={<StatsAdmin />} />
         </Route>
       </Routes>
       </AuthProvider>

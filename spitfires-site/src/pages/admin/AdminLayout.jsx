@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, NavLink, Outlet, Navigate } from 'react-router-dom'
-import { CalendarDays, Images, MessageSquare, LogOut, KeyRound, FolderOpen } from 'lucide-react'
+import { CalendarDays, Images, MessageSquare, LogOut, KeyRound, FolderOpen, BarChart2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 
@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/admin/gallery',  label: 'Gallery',  icon: Images,        end: false },
   { to: '/admin/messages', label: 'Messages', icon: MessageSquare, end: false },
   { to: '/admin/files',    label: 'Files',    icon: FolderOpen,    end: false },
+  { to: '/admin/stats',    label: 'Stats',    icon: BarChart2,     end: false },
 ]
 
 export default function AdminLayout() {
