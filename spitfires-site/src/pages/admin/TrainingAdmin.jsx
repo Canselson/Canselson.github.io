@@ -100,19 +100,19 @@ export default function TrainingAdmin() {
   }
 
   async function handleImageUpload(key, file) {
-    updateSection(key, '_uploading', true)
+    setSections(prev => prev.map(s => s._key === key ? { ...s, _uploading: true, _uploadError: null } : s))
     try {
       const blob = await compressToWebP(file)
       const path = `${eventId}/${crypto.randomUUID()}.webp`
       const { data, error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: 'image/webp' })
       if (!error) {
         const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(data.path)
-        setSections(prev => prev.map(s => s._key === key ? { ...s, image_url: publicUrl, _uploading: false } : s))
+        setSections(prev => prev.map(s => s._key === key ? { ...s, image_url: publicUrl, _uploading: false, _uploadError: null } : s))
       } else {
-        updateSection(key, '_uploading', false)
+        setSections(prev => prev.map(s => s._key === key ? { ...s, _uploading: false, _uploadError: error.message } : s))
       }
-    } catch {
-      updateSection(key, '_uploading', false)
+    } catch (err) {
+      setSections(prev => prev.map(s => s._key === key ? { ...s, _uploading: false, _uploadError: err.message } : s))
     }
   }
 
@@ -354,6 +354,11 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
               if (file) { onImageUpload(file); e.target.value = '' }
             }}
           />
+          {section._uploadError && (
+            <p className="text-red-400 text-xs bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
+              Upload failed: {section._uploadError}
+            </p>
+          )}
         </SField>
 
         <SField label="Video (YouTube URL)">

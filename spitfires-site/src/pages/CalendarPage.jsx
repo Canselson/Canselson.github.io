@@ -306,7 +306,7 @@ function EventCard({ event }) {
         {event.description && (
           <p className="text-white/30 text-xs mt-2 line-clamp-2">{event.description}</p>
         )}
-        {event.type === 'training' && event.training_plans?.length > 0 && (
+        {event.type === 'training' && (event.training_plans?.id || event.training_plans?.length > 0) && (
           <Link
             to={`/training/${event.id}`}
             className="inline-block mt-2 text-xs font-bold uppercase tracking-widest text-[#4a9a5c] hover:text-white transition-colors"
