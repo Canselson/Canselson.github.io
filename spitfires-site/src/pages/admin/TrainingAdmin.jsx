@@ -289,23 +289,40 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
       const initData = await initRes.json()
       if (!initRes.ok) throw new Error(initData.error || 'Failed to start upload')
 
-      const videoId = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest()
-        xhr.upload.onprogress = e => {
-          if (e.lengthComputable) setUploadPct(Math.round((e.loaded / e.total) * 100))
+      const { uploadUrl } = initData
+      const CHUNK = 4 * 1024 * 1024  // 4 MB — multiple of 256 KB, within Vercel 4.5 MB body limit
+      const total = uploadFile.size
+      let offset  = 0
+      let videoId = null
+
+      while (offset < total) {
+        const end   = Math.min(offset + CHUNK, total)
+        const slice = uploadFile.slice(offset, end)
+
+        const res = await fetch('/api/youtube-upload-chunk', {
+          method:  'PUT',
+          headers: {
+            'Content-Type':   'application/octet-stream',
+            'Content-Range':  `bytes ${offset}-${end - 1}/${total}`,
+            'X-Upload-Url':   uploadUrl,
+            'X-Content-Type': uploadFile.type || 'video/mp4',
+          },
+          body: slice,
+        })
+
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || `Chunk failed (${res.status})`)
+
+        setUploadPct(Math.round((end / total) * 100))
+
+        if (data.status === 'complete') {
+          videoId = data.videoId
+          break
         }
-        xhr.onload = () => {
-          if (xhr.status === 200 || xhr.status === 201) {
-            resolve(JSON.parse(xhr.responseText).id)
-          } else {
-            reject(new Error(`Upload failed (HTTP ${xhr.status})`))
-          }
-        }
-        xhr.onerror = () => reject(new Error('Upload failed — check your connection'))
-        xhr.open('PUT', initData.uploadUrl)
-        xhr.setRequestHeader('Content-Type', uploadFile.type || 'video/mp4')
-        xhr.send(uploadFile)
-      })
+        offset = end
+      }
+
+      if (!videoId) throw new Error('Upload finished but no video ID was returned')
 
       onUpdate('video_url', `https://www.youtube.com/watch?v=${videoId}`)
       cancelUpload()
