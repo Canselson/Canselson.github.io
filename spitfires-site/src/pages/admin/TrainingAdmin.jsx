@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Plus, Trash2, ChevronUp, ChevronDown, Upload, X, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
@@ -255,8 +255,66 @@ export default function TrainingAdmin() {
 // ─── Section card ─────────────────────────────────────────────────────────────
 
 function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImageUpload, onImageRemove }) {
-  const fileRef = useRef()
-  const videoId = youTubeId(section.video_url)
+  const fileRef      = useRef()
+  const videoFileRef = useRef()
+  const videoId      = youTubeId(section.video_url)
+
+  const [showUploader, setShowUploader] = useState(false)
+  const [uploadTitle,  setUploadTitle]  = useState('')
+  const [uploadFile,   setUploadFile]   = useState(null)
+  const [uploadPct,    setUploadPct]    = useState(0)
+  const [isUploading,  setIsUploading]  = useState(false)
+  const [uploadErr,    setUploadErr]    = useState(null)
+
+  function cancelUpload() {
+    setShowUploader(false)
+    setUploadTitle('')
+    setUploadFile(null)
+    setUploadPct(0)
+    setUploadErr(null)
+  }
+
+  const handleVideoUpload = useCallback(async () => {
+    if (!uploadTitle.trim() || !uploadFile) return
+    setIsUploading(true)
+    setUploadPct(0)
+    setUploadErr(null)
+
+    try {
+      const initRes = await fetch('/api/youtube-upload-init', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ title: uploadTitle.trim(), contentType: uploadFile.type || 'video/mp4' }),
+      })
+      const initData = await initRes.json()
+      if (!initRes.ok) throw new Error(initData.error || 'Failed to start upload')
+
+      const videoId = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.upload.onprogress = e => {
+          if (e.lengthComputable) setUploadPct(Math.round((e.loaded / e.total) * 100))
+        }
+        xhr.onload = () => {
+          if (xhr.status === 200 || xhr.status === 201) {
+            resolve(JSON.parse(xhr.responseText).id)
+          } else {
+            reject(new Error(`Upload failed (HTTP ${xhr.status})`))
+          }
+        }
+        xhr.onerror = () => reject(new Error('Upload failed — check your connection'))
+        xhr.open('PUT', initData.uploadUrl)
+        xhr.setRequestHeader('Content-Type', uploadFile.type || 'video/mp4')
+        xhr.send(uploadFile)
+      })
+
+      onUpdate('video_url', `https://www.youtube.com/watch?v=${videoId}`)
+      cancelUpload()
+    } catch (err) {
+      setUploadErr(err.message)
+    } finally {
+      setIsUploading(false)
+    }
+  }, [uploadTitle, uploadFile, onUpdate])
 
   return (
     <div className="bg-[#111827] border border-white/10 rounded-xl overflow-hidden">
@@ -361,23 +419,114 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
           )}
         </SField>
 
-        <SField label="Video (YouTube URL)">
-          <input
-            type="url"
-            value={section.video_url || ''}
-            onChange={e => onUpdate('video_url', e.target.value)}
-            placeholder="https://www.youtube.com/watch?v=..."
-            className={inputClass}
-          />
-          {videoId && (
-            <div className="relative rounded-xl overflow-hidden aspect-video bg-[#0a0f1a] border border-white/10 mt-1">
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${videoId}`}
-                className="absolute inset-0 w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                title="Video preview"
+        <SField label="Video">
+          {showUploader ? (
+            <div className="flex flex-col gap-2">
+              <input
+                type="text"
+                value={uploadTitle}
+                onChange={e => setUploadTitle(e.target.value)}
+                placeholder="Video title (e.g. Power Play Drill — 14 Jan)"
+                className={inputClass}
+                disabled={isUploading}
               />
+
+              {uploadFile ? (
+                <div className="flex items-center gap-2 bg-[#0a0f1a] border border-white/10 rounded-lg px-4 py-2.5">
+                  <span className="text-white/60 text-sm truncate flex-1">{uploadFile.name}</span>
+                  {!isUploading && (
+                    <button onClick={() => setUploadFile(null)} className="text-white/30 hover:text-white transition-colors shrink-0">
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => videoFileRef.current?.click()}
+                  className="w-full border-2 border-dashed border-white/10 rounded-xl py-4 text-white/25 hover:border-white/25 hover:text-white/50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Upload size={14} />
+                  <span className="text-xs font-bold uppercase tracking-widest">Select Video File</span>
+                </button>
+              )}
+              <input
+                ref={videoFileRef}
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={e => { setUploadFile(e.target.files?.[0] || null); e.target.value = '' }}
+              />
+
+              {isUploading && (
+                <div>
+                  <div className="flex justify-between text-xs text-white/40 mb-1.5">
+                    <span>Uploading to YouTube…</span>
+                    <span>{uploadPct}%</span>
+                  </div>
+                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#00436b] rounded-full transition-all duration-300"
+                      style={{ width: `${uploadPct}%` }}
+                    />
+                  </div>
+                  <p className="text-white/25 text-xs mt-1.5">
+                    Do not close this tab until the upload completes.
+                  </p>
+                </div>
+              )}
+
+              {uploadErr && (
+                <p className="text-red-400 text-xs bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
+                  {uploadErr}
+                </p>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={cancelUpload}
+                  disabled={isUploading}
+                  className="flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-white/40 bg-white/5 hover:bg-white/10 disabled:opacity-40 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleVideoUpload}
+                  disabled={!uploadTitle.trim() || !uploadFile || isUploading}
+                  className="flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-white bg-[#00436b] hover:bg-[#005a8f] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isUploading ? `${uploadPct}%…` : 'Upload to YouTube'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={section.video_url || ''}
+                  onChange={e => onUpdate('video_url', e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className={`${inputClass} flex-1`}
+                />
+                <button
+                  onClick={() => setShowUploader(true)}
+                  title="Upload video to YouTube"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/40 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors whitespace-nowrap shrink-0"
+                >
+                  <Upload size={12} /> Upload
+                </button>
+              </div>
+              {videoId && (
+                <div className="relative rounded-xl overflow-hidden aspect-video bg-[#0a0f1a] border border-white/10">
+                  <iframe
+                    src={`https://www.youtube-nocookie.com/embed/${videoId}`}
+                    className="absolute inset-0 w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title="Video preview"
+                  />
+                </div>
+              )}
             </div>
           )}
         </SField>
