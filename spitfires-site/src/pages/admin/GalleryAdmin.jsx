@@ -172,6 +172,7 @@ function AlbumEditor({ albumId }) {
   const [uploading,    setUploading]    = useState(false)
   const [progress,     setProgress]     = useState({ done: 0, total: 0 })
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [storageStats, setStorageStats] = useState(null)
   const fileRef = useRef()
 
   const loadPhotos = useCallback(async () => {
@@ -193,6 +194,15 @@ function AlbumEditor({ albumId }) {
     }
     load()
   }, [albumId, loadPhotos])
+
+  useEffect(() => {
+    fetch('/api/storage-stats')
+      .then(r => r.json())
+      .then(setStorageStats)
+      .catch(() => {})
+  }, [])
+
+  const storageBlocked = storageStats != null && storageStats.usedBytes >= storageStats.limitBytes
 
   async function handleUpload(e) {
     const files = Array.from(e.target.files || [])
@@ -282,8 +292,8 @@ function AlbumEditor({ albumId }) {
         </div>
         <button
           onClick={() => fileRef.current?.click()}
-          disabled={uploading}
-          className="flex items-center gap-2 bg-[#00436b] hover:bg-[#005a8f] disabled:opacity-50 text-white text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors"
+          disabled={uploading || storageBlocked}
+          className="flex items-center gap-2 bg-[#00436b] hover:bg-[#005a8f] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors"
         >
           <Upload size={14} />
           {uploading ? `Uploading ${progress.done} / ${progress.total}…` : 'Add Photos'}
@@ -291,14 +301,21 @@ function AlbumEditor({ albumId }) {
         <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} />
       </div>
 
+      {storageBlocked && (
+        <p className="text-red-400 text-xs bg-red-400/10 border border-red-400/20 rounded-lg px-4 py-3 mb-4">
+          Storage limit reached — delete unused photos to free up space before uploading more.
+        </p>
+      )}
+
       <p className="text-white/25 text-xs uppercase tracking-widest mb-4">
         Hover a photo — <Star size={9} className="inline" /> sets the album cover, <Trash2 size={9} className="inline" /> deletes it.
       </p>
 
       {photos.length === 0 && !uploading ? (
         <button
-          onClick={() => fileRef.current?.click()}
-          className="w-full border-2 border-dashed border-white/10 rounded-xl py-16 text-white/25 hover:border-white/25 hover:text-white/50 transition-colors flex flex-col items-center gap-2"
+          onClick={() => !storageBlocked && fileRef.current?.click()}
+          disabled={storageBlocked}
+          className="w-full border-2 border-dashed border-white/10 rounded-xl py-16 text-white/25 hover:border-white/25 hover:text-white/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex flex-col items-center gap-2"
         >
           <Upload size={24} />
           <span className="text-xs font-bold uppercase tracking-widest">Upload photos</span>
@@ -516,41 +533,29 @@ function StorageBar({ stats }) {
   if (!stats) return null
 
   const { usedBytes, limitBytes } = stats
-  const usedMB  = (usedBytes  / 1024 / 1024).toFixed(1)
-  const limitMB = limitBytes ? (limitBytes / 1024 / 1024).toFixed(0) : null
-  const pct     = limitBytes ? Math.min(100, (usedBytes / limitBytes) * 100) : null
+  const usedMB  = (usedBytes / 1024 / 1024).toFixed(1)
+  const limitMB = (limitBytes / 1024 / 1024).toFixed(0)
+  const pct     = Math.min(100, (usedBytes / limitBytes) * 100)
 
-  const barColor = pct == null ? 'bg-white/20'
-    : pct >= 90 ? 'bg-red-500'
-    : pct >= 70 ? 'bg-amber-400'
-    : 'bg-[#00436b]'
-
-  const textColor = pct == null ? 'text-white/40'
-    : pct >= 90 ? 'text-red-400'
-    : pct >= 70 ? 'text-amber-400'
-    : 'text-white/40'
+  const barColor  = pct >= 100 ? 'bg-red-500' : pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-400' : 'bg-[#00436b]'
+  const textColor = pct >= 90 ? 'text-red-400' : pct >= 70 ? 'text-amber-400' : 'text-white/40'
 
   return (
     <div className="mb-6 bg-[#111827] border border-white/10 rounded-xl px-4 py-3">
       <div className="flex items-center justify-between mb-2">
         <span className="text-white/40 text-xs font-bold uppercase tracking-widest">Media Storage</span>
         <span className={`text-xs font-mono ${textColor}`}>
-          {limitMB ? `${usedMB} / ${limitMB} MB (${pct.toFixed(1)}%)` : `${usedMB} MB used · no limit set`}
+          {usedMB} / {limitMB} MB ({pct.toFixed(1)}%)
         </span>
       </div>
       <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-        {pct != null && (
-          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
-        )}
-        {pct == null && (
-          <div className="h-full rounded-full bg-white/20" style={{ width: '100%' }} />
-        )}
+        <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
       </div>
-      {pct != null && pct >= 90 && (
-        <p className="text-red-400 text-xs mt-2">Storage almost full — delete unused photos or increase the bucket limit.</p>
+      {pct >= 100 && (
+        <p className="text-red-400 text-xs mt-2">Storage limit reached — delete unused photos to free up space.</p>
       )}
-      {limitBytes == null && (
-        <p className="text-white/25 text-xs mt-2">Set a max size on the media bucket in Supabase to enable the limit indicator.</p>
+      {pct >= 90 && pct < 100 && (
+        <p className="text-amber-400 text-xs mt-2">Storage almost full — consider deleting unused photos.</p>
       )}
     </div>
   )
