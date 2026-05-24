@@ -12,19 +12,24 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { data, error } = await supabase
-    .schema('storage')
-    .from('objects')
-    .select('metadata')
-    .eq('bucket_id', 'media')
+  // Get all album IDs so we can list each folder in the media bucket
+  const { data: albums, error: albumsError } = await supabase
+    .from('media_albums')
+    .select('id')
 
-  if (error) {
-    return res.status(500).json({ error: error.message })
+  if (albumsError) {
+    return res.status(500).json({ error: albumsError.message })
   }
 
-  const usedBytes = (data || []).reduce((sum, obj) => {
-    return sum + parseInt(obj.metadata?.size ?? 0, 10)
-  }, 0)
+  let usedBytes = 0
+  for (const album of albums || []) {
+    const { data: files } = await supabase.storage
+      .from('media')
+      .list(album.id, { limit: 10000 })
+    for (const file of files || []) {
+      usedBytes += file.metadata?.size ?? 0
+    }
+  }
 
   res.status(200).json({ usedBytes, limitBytes: MEDIA_LIMIT_BYTES })
 }

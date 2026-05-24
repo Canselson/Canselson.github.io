@@ -530,7 +530,7 @@ function DeleteModal({ message, onCancel, onConfirm }) {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function StorageBar({ stats }) {
-  if (!stats) return null
+  if (!stats || typeof stats.usedBytes !== 'number' || typeof stats.limitBytes !== 'number') return null
 
   const { usedBytes, limitBytes } = stats
   const usedMB  = (usedBytes / 1024 / 1024).toFixed(1)
