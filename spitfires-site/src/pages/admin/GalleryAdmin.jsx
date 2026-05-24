@@ -24,10 +24,11 @@ export default function GalleryAdmin() {
 
 function AlbumList() {
   const navigate = useNavigate()
-  const [albums,      setAlbums]      = useState([])
-  const [loading,     setLoading]     = useState(true)
-  const [panelAlbum,  setPanelAlbum]  = useState(null)
+  const [albums,       setAlbums]       = useState([])
+  const [loading,      setLoading]      = useState(true)
+  const [panelAlbum,   setPanelAlbum]   = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [storageStats, setStorageStats] = useState(null)
 
   const load = useCallback(async () => {
     const { data } = await supabase
@@ -39,6 +40,13 @@ function AlbumList() {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    fetch('/api/storage-stats')
+      .then(r => r.json())
+      .then(setStorageStats)
+      .catch(() => {})
+  }, [])
 
   async function deleteAlbum(album) {
     await supabase.from('media_albums').delete().eq('id', album.id)
@@ -60,6 +68,8 @@ function AlbumList() {
           <Plus size={14} /> New Album
         </button>
       </div>
+
+      <StorageBar stats={storageStats} />
 
       {loading ? (
         <div className="flex flex-col gap-2">
@@ -501,6 +511,50 @@ function DeleteModal({ message, onCancel, onConfirm }) {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function StorageBar({ stats }) {
+  if (!stats) return null
+
+  const { usedBytes, limitBytes } = stats
+  const usedMB  = (usedBytes  / 1024 / 1024).toFixed(1)
+  const limitMB = limitBytes ? (limitBytes / 1024 / 1024).toFixed(0) : null
+  const pct     = limitBytes ? Math.min(100, (usedBytes / limitBytes) * 100) : null
+
+  const barColor = pct == null ? 'bg-white/20'
+    : pct >= 90 ? 'bg-red-500'
+    : pct >= 70 ? 'bg-amber-400'
+    : 'bg-[#00436b]'
+
+  const textColor = pct == null ? 'text-white/40'
+    : pct >= 90 ? 'text-red-400'
+    : pct >= 70 ? 'text-amber-400'
+    : 'text-white/40'
+
+  return (
+    <div className="mb-6 bg-[#111827] border border-white/10 rounded-xl px-4 py-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-white/40 text-xs font-bold uppercase tracking-widest">Media Storage</span>
+        <span className={`text-xs font-mono ${textColor}`}>
+          {limitMB ? `${usedMB} / ${limitMB} MB (${pct.toFixed(1)}%)` : `${usedMB} MB used · no limit set`}
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+        {pct != null && (
+          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+        )}
+        {pct == null && (
+          <div className="h-full rounded-full bg-white/20" style={{ width: '100%' }} />
+        )}
+      </div>
+      {pct != null && pct >= 90 && (
+        <p className="text-red-400 text-xs mt-2">Storage almost full — delete unused photos or increase the bucket limit.</p>
+      )}
+      {limitBytes == null && (
+        <p className="text-white/25 text-xs mt-2">Set a max size on the media bucket in Supabase to enable the limit indicator.</p>
+      )}
+    </div>
+  )
+}
 
 const MAX_PX = 1920
 const WEBP_QUALITY = 0.82
