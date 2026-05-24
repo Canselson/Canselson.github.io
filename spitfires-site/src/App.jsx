@@ -18,6 +18,8 @@ import GalleryAdmin from './pages/admin/GalleryAdmin'
 import MessagesAdmin from './pages/admin/MessagesAdmin'
 import FilesAdmin from './pages/admin/FilesAdmin'
 import StatsAdmin from './pages/admin/StatsAdmin'
+import TrainingAdmin from './pages/admin/TrainingAdmin'
+import TrainingPage from './pages/TrainingPage'
 import DocumentsPage from './pages/DocumentsPage'
 import './App.css'
 
@@ -55,7 +57,8 @@ export default function App() {
           <Route path="/gallery/:albumId"    element={<AlbumPage />} />
           <Route path="/about"               element={<AboutPage />} />
           <Route path="/join"                element={<JoinPage />} />
-          <Route path="/documents"           element={<DocumentsPage />} />
+          <Route path="/documents"             element={<DocumentsPage />} />
+          <Route path="/training/:eventId"   element={<TrainingPage />} />
           <Route path="/teams/:teamSlug"     element={<TeamPage />} />
         </Route>
 
@@ -67,8 +70,9 @@ export default function App() {
           <Route path="gallery" element={<GalleryAdmin />} />
           <Route path="gallery/:albumId" element={<GalleryAdmin />} />
           <Route path="messages" element={<MessagesAdmin />} />
-          <Route path="files"    element={<FilesAdmin />} />
-          <Route path="stats"    element={<StatsAdmin />} />
+          <Route path="files"               element={<FilesAdmin />} />
+          <Route path="stats"               element={<StatsAdmin />} />
+          <Route path="training/:eventId"   element={<TrainingAdmin />} />
         </Route>
       </Routes>
       </AuthProvider>

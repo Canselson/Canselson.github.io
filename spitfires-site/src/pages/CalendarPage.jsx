@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, MapPin, Clock, CalendarDays, Copy, Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
@@ -31,7 +32,7 @@ export default function CalendarPage() {
   useEffect(() => {
     supabase
       .from('events')
-      .select('*')
+      .select('*, training_plans(id)')
       .order('starts_at', { ascending: true })
       .then(({ data, error }) => {
         if (error) setError(error.message)
@@ -304,6 +305,14 @@ function EventCard({ event }) {
         </div>
         {event.description && (
           <p className="text-white/30 text-xs mt-2 line-clamp-2">{event.description}</p>
+        )}
+        {event.type === 'training' && event.training_plans?.length > 0 && (
+          <Link
+            to={`/training/${event.id}`}
+            className="inline-block mt-2 text-xs font-bold uppercase tracking-widest text-[#4a9a5c] hover:text-white transition-colors"
+          >
+            View Plan →
+          </Link>
         )}
       </div>
     </div>

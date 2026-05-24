@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Pencil, Trash2, X, AlertTriangle, FileText, Upload, Copy, FileImage, Check } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, AlertTriangle, FileText, Upload, Copy, FileImage, Check, LayoutList } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 const EVENT_TYPES = {
@@ -168,6 +168,7 @@ export default function CalendarAdmin() {
               onEdit={openEdit}
               onDuplicate={openDuplicate}
               onDelete={setDeleteTarget}
+              onPlan={ev => navigate(`/admin/training/${ev.id}`)}
               emptyText="No upcoming events — add one above."
             />
           )}
@@ -178,6 +179,7 @@ export default function CalendarAdmin() {
               onDuplicate={openDuplicate}
               onDelete={setDeleteTarget}
               onReport={ev => navigate(`/admin/reports/${ev.id}`)}
+              onPlan={ev => navigate(`/admin/training/${ev.id}`)}
               dimmed
               emptyText="No past events yet."
             />
@@ -189,6 +191,7 @@ export default function CalendarAdmin() {
               onDuplicate={openDuplicate}
               onDelete={setDeleteTarget}
               onReport={ev => navigate(`/admin/reports/${ev.id}`)}
+              onPlan={ev => navigate(`/admin/training/${ev.id}`)}
               pending
               emptyText="All past games have reports uploaded."
             />
@@ -227,7 +230,7 @@ export default function CalendarAdmin() {
 
 // ─── Event list section ───────────────────────────────────────────────────────
 
-function EventSection({ events, onEdit, onDuplicate, onDelete, onReport, emptyText, dimmed = false, pending = false }) {
+function EventSection({ events, onEdit, onDuplicate, onDelete, onReport, onPlan, emptyText, dimmed = false, pending = false }) {
   return (
     <div className="mb-10">
       {events.length === 0 && emptyText ? (
@@ -242,6 +245,7 @@ function EventSection({ events, onEdit, onDuplicate, onDelete, onReport, emptyTe
               onDuplicate={onDuplicate}
               onDelete={onDelete}
               onReport={onReport}
+              onPlan={onPlan}
               dimmed={dimmed}
               pending={pending}
             />
@@ -252,7 +256,7 @@ function EventSection({ events, onEdit, onDuplicate, onDelete, onReport, emptyTe
   )
 }
 
-function EventRow({ event, onEdit, onDuplicate, onDelete, onReport, dimmed, pending }) {
+function EventRow({ event, onEdit, onDuplicate, onDelete, onReport, onPlan, dimmed, pending }) {
   const start   = new Date(event.starts_at)
   const end     = event.ends_at ? new Date(event.ends_at) : null
   const isMulti = end && end.toDateString() !== start.toDateString()
@@ -325,6 +329,15 @@ function EventRow({ event, onEdit, onDuplicate, onDelete, onReport, dimmed, pend
             className="p-2 rounded-lg text-white/40 hover:text-[#7ec8e3] hover:bg-[#00436b]/20 transition-colors"
           >
             <FileText size={14} />
+          </button>
+        )}
+        {event.type === 'training' && onPlan && (
+          <button
+            onClick={() => onPlan(event)}
+            title="Edit training plan"
+            className="p-2 rounded-lg text-white/40 hover:text-[#7ec8e3] hover:bg-[#00436b]/20 transition-colors"
+          >
+            <LayoutList size={14} />
           </button>
         )}
         <button
