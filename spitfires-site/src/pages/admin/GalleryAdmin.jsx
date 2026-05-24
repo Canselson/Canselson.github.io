@@ -196,10 +196,10 @@ function AlbumEditor({ albumId }) {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
-      const ext  = file.name.split('.').pop().toLowerCase()
-      const path = `${albumId}/${crypto.randomUUID()}.${ext}`
+      const blob = await compressToWebP(file)
+      const path = `${albumId}/${crypto.randomUUID()}.webp`
 
-      const { data: upload, error } = await supabase.storage.from('media').upload(path, file)
+      const { data: upload, error } = await supabase.storage.from('media').upload(path, blob, { contentType: 'image/webp' })
       if (error) {
         console.error('Upload error:', error)
         setProgress(p => ({ ...p, done: p.done + 1 }))
@@ -501,6 +501,29 @@ function DeleteModal({ message, onCancel, onConfirm }) {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const MAX_PX = 1920
+const WEBP_QUALITY = 0.82
+
+function compressToWebP(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const scale = Math.min(1, MAX_PX / Math.max(img.width, img.height))
+      const w = Math.round(img.width  * scale)
+      const h = Math.round(img.height * scale)
+      const canvas = document.createElement('canvas')
+      canvas.width  = w
+      canvas.height = h
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/webp', WEBP_QUALITY)
+    }
+    img.onerror = reject
+    img.src = url
+  })
+}
 
 function Field({ label, children }) {
   return (
