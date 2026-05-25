@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import PageMeta from '../components/PageMeta'
 
 const TEAMS = {
   'a-team': 'A Team',
@@ -50,6 +51,11 @@ export default function AlbumPage() {
     : null
 
   return (
+    <>
+    <PageMeta
+      title={album ? `${album.title} | Gallery` : 'Gallery'}
+      description={album ? `Photos from ${album.title}${date ? ` — ${date}` : ''}.` : 'Southampton Spitfires photo gallery.'}
+    />
     <div className="pt-24 pb-24 max-w-6xl mx-auto px-4">
       <Link
         to="/gallery"
@@ -120,6 +126,7 @@ export default function AlbumPage() {
         />
       )}
     </div>
+    </>
   )
 }
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import PageMeta from '../components/PageMeta'
 
 const SKILL_LEVELS = [
   { value: '',             label: 'N/A — Not sure / prefer not to say' },
@@ -49,6 +50,8 @@ export default function JoinPage() {
 
   if (submitted) {
     return (
+      <>
+      <PageMeta title="Join Us" description="Want to play ice hockey at Southampton University? Get in touch with the Spitfires — all skill levels welcome, no experience needed." />
       <div className="pt-32 pb-24 max-w-lg mx-auto px-4 text-center">
         <img src="/logo.png" alt="" className="h-24 w-auto mx-auto mb-8 drop-shadow-2xl" />
         <h2 className="text-white text-3xl font-black uppercase tracking-tight mb-3">
@@ -58,10 +61,13 @@ export default function JoinPage() {
           Thanks for getting in touch. We'll reach out to you soon — see you on the ice!
         </p>
       </div>
+      </>
     )
   }
 
   return (
+    <>
+    <PageMeta title="Join Us" description="Want to play ice hockey at Southampton University? Get in touch with the Spitfires — all skill levels welcome, no experience needed." />
     <div className="pt-24 pb-24 max-w-xl mx-auto px-4">
       <div className="mb-10">
         <p className="text-[#641e31] text-xs font-black uppercase tracking-[0.3em] mb-2">
@@ -158,7 +164,7 @@ export default function JoinPage() {
         </button>
 
         <p className="text-white/20 text-xs text-center">
-          Fields marked * are required. By submitting this form you confirm you are 18 or older and agree to our{' '}
+          Fields marked * are required. By submitting this form you confirm you are 17 or older and agree to our{' '}
           <a href="/privacy-policy-print.html" target="_blank" rel="noopener noreferrer"
             className="underline hover:text-white/40 transition-colors">
             Privacy Policy
@@ -166,6 +172,7 @@ export default function JoinPage() {
         </p>
       </form>
     </div>
+    </>
   )
 }
 

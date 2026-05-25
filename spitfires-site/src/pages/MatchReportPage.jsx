@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import PageMeta from '../components/PageMeta'
 
 const TEAMS = {
   'a-team': 'A Team',
@@ -55,7 +56,11 @@ export default function MatchReportPage() {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
 
+  const metaTitle = `${homeTeam} vs ${awayTeam}${homeScore !== null ? ` (${homeScore}–${awayScore})` : ''} | Match Report`
+
   return (
+    <>
+    <PageMeta title={metaTitle} description={`Match report for ${homeTeam} vs ${awayTeam} on ${date}.`} />
     <div className="pt-24 pb-24 max-w-4xl mx-auto px-4">
       <Link
         to="/fixtures"
@@ -111,6 +116,7 @@ export default function MatchReportPage() {
         </Section>
       )}
     </div>
+    </>
   )
 }
 

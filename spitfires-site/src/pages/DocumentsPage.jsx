@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { FileText, Download } from 'lucide-react'
+import PageMeta from '../components/PageMeta'
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState([])
@@ -38,6 +39,11 @@ export default function DocumentsPage() {
   }
 
   return (
+    <>
+    <PageMeta
+      title="Club Documents"
+      description="Official documents and resources for Southampton Spitfires Ice Hockey Club members."
+    />
     <div className="pt-24 pb-24 max-w-3xl mx-auto px-4">
 
       <div className="mb-12">
@@ -93,5 +99,6 @@ export default function DocumentsPage() {
       )}
 
     </div>
+    </>
   )
 }

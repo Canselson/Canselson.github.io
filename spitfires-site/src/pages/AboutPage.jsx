@@ -1,5 +1,12 @@
+import PageMeta from '../components/PageMeta'
+
 export default function AboutPage() {
   return (
+    <>
+    <PageMeta
+      title="About Us"
+      description="Learn about Southampton Spitfires Ice Hockey Club — our history, teams, and how to get involved at Southampton University."
+    />
     <div className="pt-24 pb-24 max-w-3xl mx-auto px-4">
 
       {/* Header */}
@@ -62,5 +69,6 @@ export default function AboutPage() {
       </div>
 
     </div>
+    </>
   )
 }

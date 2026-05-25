@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import PageMeta from '../components/PageMeta'
 
 const TEAMS = [
   { slug: 'a-team',  name: 'A Team'  },
@@ -43,6 +44,11 @@ export default function FixturesPage() {
   const recent   = filtered.filter(g => new Date(g.starts_at) <  now).reverse()
 
   return (
+    <>
+    <PageMeta
+      title="Fixtures & Results"
+      description="View upcoming fixtures and past results for all Southampton Spitfires ice hockey teams."
+    />
     <div className="pt-24 pb-24 max-w-4xl mx-auto px-4">
       {/* Header */}
       <div className="mb-8">
@@ -80,6 +86,7 @@ export default function FixturesPage() {
         </>
       )}
     </div>
+    </>
   )
 }
 

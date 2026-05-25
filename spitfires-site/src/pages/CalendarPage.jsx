@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, MapPin, Clock, CalendarDays, Copy, Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import PageMeta from '../components/PageMeta'
 
 // ─── To add a new event category:
 //     1. Add one entry here
@@ -81,6 +82,11 @@ export default function CalendarPage() {
     viewDate.getMonth()    === today.getMonth()
 
   return (
+    <>
+    <PageMeta
+      title="Calendar"
+      description="Upcoming games, training sessions, and social events for Southampton Spitfires Ice Hockey Club."
+    />
     <div className="pt-24 pb-24 max-w-3xl mx-auto px-4">
 
       {/* Page header */}
@@ -188,6 +194,7 @@ export default function CalendarPage() {
       {/* Subscribe section */}
       <SubscribeSection />
     </div>
+    </>
   )
 }
 

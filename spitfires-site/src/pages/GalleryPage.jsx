@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Images } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import PageMeta from '../components/PageMeta'
 
 const TEAMS = {
   'a-team': 'A Team',
@@ -27,6 +28,11 @@ export default function GalleryPage() {
   }, [])
 
   return (
+    <>
+    <PageMeta
+      title="Gallery"
+      description="Photos from Southampton Spitfires matches, training sessions, and club events."
+    />
     <div className="pt-24 pb-24 max-w-6xl mx-auto px-4">
       <div className="mb-10">
         <p className="text-[#641e31] text-xs font-black uppercase tracking-[0.3em] mb-2">
@@ -54,6 +60,7 @@ export default function GalleryPage() {
         </div>
       )}
     </div>
+    </>
   )
 }
 

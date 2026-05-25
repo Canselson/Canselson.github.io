@@ -21,6 +21,7 @@ import StatsAdmin from './pages/admin/StatsAdmin'
 import TrainingAdmin from './pages/admin/TrainingAdmin'
 import TrainingPage from './pages/TrainingPage'
 import DocumentsPage from './pages/DocumentsPage'
+import PageMeta from './components/PageMeta'
 import './App.css'
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -205,6 +206,7 @@ function HomePage() {
 
   return (
     <>
+      <PageMeta description="Southampton Spitfires is a university ice hockey club with teams competing across BUIHA leagues. All skill levels welcome — based at Southampton University." />
       <Hero />
       <InfoStrip data={homeData} />
       <TeamsSection />
@@ -503,6 +505,10 @@ function TeamPage() {
 
   return (
     <>
+      <PageMeta
+        title={`${team.name}`}
+        description={`Southampton Spitfires ${team.name} — fixtures, results, and team information.`}
+      />
       {/* Hero banner */}
       <div className="relative h-80 sm:h-[28rem] overflow-hidden">
         <img
