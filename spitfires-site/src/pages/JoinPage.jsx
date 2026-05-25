@@ -158,7 +158,7 @@ export default function JoinPage() {
         </button>
 
         <p className="text-white/20 text-xs text-center">
-          Fields marked * are required. By submitting this form you agree to our{' '}
+          Fields marked * are required. By submitting this form you confirm you are 18 or older and agree to our{' '}
           <a href="/privacy-policy-print.html" target="_blank" rel="noopener noreferrer"
             className="underline hover:text-white/40 transition-colors">
             Privacy Policy
