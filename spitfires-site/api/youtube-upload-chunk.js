@@ -3,18 +3,12 @@ export const config = {
 }
 
 async function requireAuth(req, res) {
-  const token = (req.headers.authorization ?? '').replace('Bearer ', '')
-  if (!token) { res.status(401).json({ error: 'Unauthorized' }); return null }
-  const response = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      apikey: process.env.SUPABASE_SERVICE_KEY,
-    },
+  res.status(401).json({
+    _debug_headers: Object.keys(req.headers),
+    authorization_present: 'authorization' in req.headers,
+    authorization_prefix: (req.headers.authorization ?? '').substring(0, 15) || 'empty',
   })
-  const body = await response.json().catch(() => ({}))
-  if (!response.ok) { res.status(401).json({ error: 'Unauthorized', _debug: { status: response.status, body, hasUrl: !!process.env.SUPABASE_URL, hasKey: !!process.env.SUPABASE_SERVICE_KEY } }); return null }
-  if (!body?.id) { res.status(401).json({ error: 'Unauthorized', _debug: { reason: 'no_id', body } }); return null }
-  return body
+  return null
 }
 
 const ALLOWED_UPLOAD_HOST = 'www.googleapis.com'
