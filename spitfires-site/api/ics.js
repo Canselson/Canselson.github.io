@@ -73,5 +73,7 @@ function toICSDate(date) {
 }
 
 function escapeICS(str) {
-  return str.replace(/\\/g, '\\\\').replace(/[,;]/g, c => `\\${c}`).replace(/\n/g, '\\n')
+  return str
+    .replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+    .replace(/\\/g, '\\\\').replace(/[,;]/g, c => `\\${c}`).replace(/\n/g, '\\n')
 }

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabase'
 
 const SKILL_LEVELS = [
   { value: '',             label: 'N/A — Not sure / prefer not to say' },
@@ -10,7 +9,7 @@ const SKILL_LEVELS = [
 
 export default function JoinPage() {
   const [form, setForm] = useState({
-    name: '', mobile: '', skill_level: '', university: '', message: '',
+    name: '', mobile: '', skill_level: '', university: '', message: '', _pot: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [submitted,  setSubmitted]  = useState(false)
@@ -24,19 +23,28 @@ export default function JoinPage() {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
-    const { error: err } = await supabase.from('contact_messages').insert({
-      name:        form.name.trim(),
-      mobile:      form.mobile.trim(),
-      skill_level: form.skill_level || null,
-      university:  form.university.trim() || null,
-      message:     form.message.trim(),
-    })
-    if (err) {
+    try {
+      const res = await fetch('/api/contact', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(form),
+      })
+      if (res.status === 429) {
+        setError('Too many requests — please wait a moment before trying again.')
+        setSubmitting(false)
+        return
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Something went wrong — please try again.')
+        setSubmitting(false)
+        return
+      }
+      setSubmitted(true)
+    } catch (_) {
       setError('Something went wrong — please try again.')
       setSubmitting(false)
-      return
     }
-    setSubmitted(true)
   }
 
   if (submitted) {
@@ -123,6 +131,17 @@ export default function JoinPage() {
             className={`${inputClass} resize-none`}
           />
         </Field>
+
+        {/* Honeypot — hidden from real users, filled only by bots */}
+        <input
+          type="text"
+          name="_pot"
+          value={form._pot}
+          onChange={set('_pot')}
+          tabIndex={-1}
+          aria-hidden="true"
+          style={{ display: 'none' }}
+        />
 
         {error && (
           <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-lg px-4 py-3">
