@@ -11,10 +11,10 @@ async function requireAuth(req, res) {
       apikey: process.env.SUPABASE_SERVICE_KEY,
     },
   })
-  if (!response.ok) { res.status(401).json({ error: 'Unauthorized' }); return null }
-  const user = await response.json()
-  if (!user?.id) { res.status(401).json({ error: 'Unauthorized' }); return null }
-  return user
+  const body = await response.json().catch(() => ({}))
+  if (!response.ok) { res.status(401).json({ error: 'Unauthorized', _debug: { status: response.status, body, hasUrl: !!process.env.SUPABASE_URL, hasKey: !!process.env.SUPABASE_SERVICE_KEY } }); return null }
+  if (!body?.id) { res.status(401).json({ error: 'Unauthorized', _debug: { reason: 'no_id', body } }); return null }
+  return body
 }
 
 const ALLOWED_UPLOAD_HOST = 'www.googleapis.com'
