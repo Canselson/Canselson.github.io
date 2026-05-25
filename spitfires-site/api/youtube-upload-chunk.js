@@ -4,16 +4,20 @@ export const config = {
 
 async function requireAuth(req, res) {
   const token = req.headers['x-admin-token'] ?? ''
-  if (!token) { res.status(401).json({ error: 'Unauthorized' }); return null }
-  const response = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
+  if (!token) { res.status(401).json({ error: 'Unauthorized', _d: 'no_token' }); return null }
+  const url = `${process.env.SUPABASE_URL}/auth/v1/user`
+  const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
       apikey: process.env.SUPABASE_SERVICE_KEY,
     },
   })
   const body = await response.json().catch(() => ({}))
-  if (!response.ok) { res.status(401).json({ error: 'Unauthorized' }); return null }
-  if (!body?.id) { res.status(401).json({ error: 'Unauthorized' }); return null }
+  if (!response.ok) {
+    res.status(401).json({ error: 'Unauthorized', _d: 'supabase_fail', _s: response.status, _b: body, _hasUrl: !!process.env.SUPABASE_URL, _hasKey: !!process.env.SUPABASE_SERVICE_KEY, _tok10: token.slice(0,10) })
+    return null
+  }
+  if (!body?.id) { res.status(401).json({ error: 'Unauthorized', _d: 'no_id', _b: body }); return null }
   return body
 }
 
