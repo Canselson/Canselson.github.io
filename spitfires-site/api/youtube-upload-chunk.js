@@ -1,5 +1,3 @@
-import { createClient } from '@supabase/supabase-js'
-
 export const config = {
   api: { bodyParser: false },
 }
@@ -7,9 +5,15 @@ export const config = {
 async function requireAuth(req, res) {
   const token = (req.headers.authorization ?? '').replace('Bearer ', '')
   if (!token) { res.status(401).json({ error: 'Unauthorized' }); return null }
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
-  const { data: { user }, error } = await supabase.auth.getUser(token)
-  if (error || !user) { res.status(401).json({ error: 'Unauthorized' }); return null }
+  const response = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: process.env.SUPABASE_SERVICE_KEY,
+    },
+  })
+  if (!response.ok) { res.status(401).json({ error: 'Unauthorized' }); return null }
+  const user = await response.json()
+  if (!user?.id) { res.status(401).json({ error: 'Unauthorized' }); return null }
   return user
 }
 
