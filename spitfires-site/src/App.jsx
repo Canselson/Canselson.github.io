@@ -21,6 +21,7 @@ import StatsAdmin from './pages/admin/StatsAdmin'
 import TrainingAdmin from './pages/admin/TrainingAdmin'
 import TrainingPage from './pages/TrainingPage'
 import DocumentsPage from './pages/DocumentsPage'
+import { Helmet } from 'react-helmet-async'
 import PageMeta from './components/PageMeta'
 import './App.css'
 
@@ -204,9 +205,33 @@ function HomePage() {
     })
   }, [])
 
+  const orgSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'SportsOrganization',
+    name: 'Southampton Spitfires',
+    sport: 'Ice Hockey',
+    url: 'https://southamptonspitfires.me',
+    logo: 'https://southamptonspitfires.me/logo.png',
+    sameAs: [
+      'https://www.instagram.com/southamptonspitfires/',
+      'https://www.youtube.com/@southamptonspitfires',
+      'https://buiha.org/club/southampton',
+    ],
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'University Road',
+      addressLocality: 'Southampton',
+      postalCode: 'SO17 1BJ',
+      addressCountry: 'GB',
+    },
+  }
+
   return (
     <>
       <PageMeta description="Southampton Spitfires is a university ice hockey club with teams competing across BUIHA leagues. All skill levels welcome — based at Southampton University." />
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(orgSchema)}</script>
+      </Helmet>
       <Hero />
       <InfoStrip data={homeData} />
       <TeamsSection />

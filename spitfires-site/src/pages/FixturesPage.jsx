@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { Helmet } from 'react-helmet-async'
 import PageMeta from '../components/PageMeta'
 
 const TEAMS = [
@@ -43,12 +44,39 @@ export default function FixturesPage() {
   const upcoming = filtered.filter(g => new Date(g.starts_at) >= now)
   const recent   = filtered.filter(g => new Date(g.starts_at) <  now).reverse()
 
+  const eventsSchema = upcoming.map(game => {
+    const teamName  = TEAMS.find(t => t.slug === game.team)?.name ?? ''
+    const spitName  = `Southampton Spitfires${teamName ? ` ${teamName}` : ''}`
+    const spitOrg   = { '@type': 'SportsOrganization', name: spitName, url: `https://southamptonspitfires.me/teams/${game.team}` }
+    const oppOrg    = { '@type': 'SportsOrganization', name: game.opponent }
+    const isHome    = game.home_away === 'home'
+    return {
+      '@type':       'SportsEvent',
+      name:          isHome ? `${spitName} vs ${game.opponent}` : `${game.opponent} vs ${spitName}`,
+      startDate:     game.starts_at,
+      sport:         'Ice Hockey',
+      eventStatus:   'https://schema.org/EventScheduled',
+      homeTeam:      isHome ? spitOrg : oppOrg,
+      awayTeam:      isHome ? oppOrg  : spitOrg,
+      organizer:     { '@type': 'SportsOrganization', name: 'Southampton Spitfires', url: 'https://southamptonspitfires.me' },
+      url:           'https://southamptonspitfires.me/fixtures',
+      ...(game.location ? { location: { '@type': 'Place', name: game.location } } : {}),
+    }
+  })
+
   return (
     <>
     <PageMeta
       title="Fixtures & Results"
       description="View upcoming fixtures and past results for all Southampton Spitfires ice hockey teams."
     />
+    {eventsSchema.length > 0 && (
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify({ '@context': 'https://schema.org', '@graph': eventsSchema })}
+        </script>
+      </Helmet>
+    )}
     <div className="pt-24 pb-24 max-w-4xl mx-auto px-4">
       {/* Header */}
       <div className="mb-8">
