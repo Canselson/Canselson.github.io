@@ -1,7 +1,20 @@
+async function requireAuth(req, res) {
+  const token = req.headers['x-admin-token'] ?? ''
+  if (!token) { res.status(401).json({ error: 'Unauthorized' }); return null }
+  const response = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
+    headers: { Authorization: `Bearer ${token}`, apikey: process.env.SUPABASE_SERVICE_KEY },
+  })
+  const body = await response.json().catch(() => ({}))
+  if (!response.ok || !body?.id) { res.status(401).json({ error: 'Unauthorized' }); return null }
+  return body
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+
+  if (!await requireAuth(req, res)) return
 
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
@@ -95,7 +108,7 @@ export default async function handler(req, res) {
       .filter(f => /^\d{4}-\d{2}-\d{2}$/.test(f.date) && f.opponent)
 
     return res.status(200).json({ fixtures: normalised })
-  } catch (err) {
-    return res.status(500).json({ error: err.message })
+  } catch (_) {
+    return res.status(500).json({ error: 'Internal server error' })
   }
 }

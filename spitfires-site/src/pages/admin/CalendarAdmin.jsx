@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2, X, AlertTriangle, FileText, Upload, Copy, FileImage, Check, LayoutList } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 
 const EVENT_TYPES = {
   game:     { label: 'Game',     color: '#00436b' },
@@ -34,6 +35,7 @@ const EMPTY_FORM = {
 
 export default function CalendarAdmin() {
   const navigate = useNavigate()
+  const { session } = useAuth()
   const [events,       setEvents]       = useState([])
   const [loading,      setLoading]      = useState(true)
   const [activeTab,    setActiveTab]    = useState('upcoming')
@@ -609,7 +611,7 @@ function ImportFixturesModal({ onClose, onImported }) {
       const mimeType = file.type || 'image/jpeg'
       const res      = await fetch('/api/import-fixtures', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': session?.access_token ?? '' },
         body:    JSON.stringify({ image, mimeType, team }),
       })
       const json = await res.json()

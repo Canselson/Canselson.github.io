@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2, X, AlertTriangle, Upload, Star, Images } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 
 const TEAMS = [
   { slug: 'a-team', name: 'A Team'  },
@@ -24,6 +25,7 @@ export default function GalleryAdmin() {
 
 function AlbumList() {
   const navigate = useNavigate()
+  const { session } = useAuth()
   const [albums,       setAlbums]       = useState([])
   const [loading,      setLoading]      = useState(true)
   const [panelAlbum,   setPanelAlbum]   = useState(null)
@@ -42,7 +44,7 @@ function AlbumList() {
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
-    fetch('/api/storage-stats')
+    fetch('/api/storage-stats', { headers: { 'X-Admin-Token': session?.access_token ?? '' } })
       .then(r => r.json())
       .then(setStorageStats)
       .catch(() => {})
@@ -166,6 +168,7 @@ function AlbumRow({ album, onEdit, onDelete, onOpen }) {
 
 function AlbumEditor({ albumId }) {
   const navigate = useNavigate()
+  const { session } = useAuth()
   const [album,        setAlbum]        = useState(null)
   const [photos,       setPhotos]       = useState([])
   const [loading,      setLoading]      = useState(true)
@@ -196,7 +199,7 @@ function AlbumEditor({ albumId }) {
   }, [albumId, loadPhotos])
 
   useEffect(() => {
-    fetch('/api/storage-stats')
+    fetch('/api/storage-stats', { headers: { 'X-Admin-Token': session?.access_token ?? '' } })
       .then(r => r.json())
       .then(setStorageStats)
       .catch(() => {})

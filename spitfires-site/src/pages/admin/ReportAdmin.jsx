@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Upload, Save, Sparkles, Trash2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 import { parseDGS } from '../../lib/parseDGS'
 
 const TEAMS = {
@@ -15,6 +16,7 @@ const TEAMS = {
 export default function ReportAdmin() {
   const { eventId } = useParams()
   const navigate    = useNavigate()
+  const { session } = useAuth()
 
   const [event,      setEvent]      = useState(null)
   const [report,     setReport]     = useState(null)
@@ -79,7 +81,7 @@ export default function ReportAdmin() {
     try {
       const res = await fetch('/api/generate-report', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': session?.access_token ?? '' },
         body: JSON.stringify({
           eventId,
           homeTeamName: dgsData.homeTeamName,
