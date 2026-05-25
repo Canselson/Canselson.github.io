@@ -1,11 +1,26 @@
+import { createClient } from '@supabase/supabase-js'
+
 export const config = {
   api: { bodyParser: false },
 }
+
+async function requireAuth(req, res) {
+  const token = (req.headers.authorization ?? '').replace('Bearer ', '')
+  if (!token) { res.status(401).json({ error: 'Unauthorized' }); return null }
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
+  const { data: { user }, error } = await supabase.auth.getUser(token)
+  if (error || !user) { res.status(401).json({ error: 'Unauthorized' }); return null }
+  return user
+}
+
+const ALLOWED_UPLOAD_HOST = 'www.googleapis.com'
 
 export default async function handler(req, res) {
   if (req.method !== 'PUT') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+
+  if (!await requireAuth(req, res)) return
 
   const uploadUrl    = req.headers['x-upload-url']
   const contentType  = req.headers['x-content-type'] || 'video/mp4'
@@ -13,6 +28,15 @@ export default async function handler(req, res) {
 
   if (!uploadUrl)    return res.status(400).json({ error: 'Missing X-Upload-Url header' })
   if (!contentRange) return res.status(400).json({ error: 'Missing Content-Range header' })
+
+  try {
+    const parsed = new URL(uploadUrl)
+    if (parsed.hostname !== ALLOWED_UPLOAD_HOST) {
+      return res.status(400).json({ error: 'Invalid upload URL' })
+    }
+  } catch {
+    return res.status(400).json({ error: 'Malformed upload URL' })
+  }
 
   // Buffer the incoming chunk
   const buffers = []

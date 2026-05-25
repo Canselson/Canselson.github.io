@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Plus, Trash2, ChevronUp, ChevronDown, Upload, X, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 
 const BUCKET       = 'training'
 const MAX_PX       = 1920
@@ -258,6 +259,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
   const fileRef      = useRef()
   const videoFileRef = useRef()
   const videoId      = youTubeId(section.video_url)
+  const { session }  = useAuth()
 
   const [showUploader, setShowUploader] = useState(false)
   const [uploadTitle,  setUploadTitle]  = useState('')
@@ -280,10 +282,15 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
     setUploadPct(0)
     setUploadErr(null)
 
+    const token = session?.access_token ?? ''
+
     try {
       const initRes = await fetch('/api/youtube-upload-init', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body:    JSON.stringify({ title: uploadTitle.trim(), contentType: uploadFile.type || 'video/mp4' }),
       })
       const initData = await initRes.json()
@@ -306,6 +313,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
             'Content-Range':  `bytes ${offset}-${end - 1}/${total}`,
             'X-Upload-Url':   uploadUrl,
             'X-Content-Type': uploadFile.type || 'video/mp4',
+            'Authorization':  `Bearer ${token}`,
           },
           body: slice,
         })
@@ -331,7 +339,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
     } finally {
       setIsUploading(false)
     }
-  }, [uploadTitle, uploadFile, onUpdate])
+  }, [uploadTitle, uploadFile, onUpdate, session])
 
   return (
     <div className="bg-[#111827] border border-white/10 rounded-xl overflow-hidden">
