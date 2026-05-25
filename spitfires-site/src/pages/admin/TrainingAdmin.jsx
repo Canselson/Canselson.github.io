@@ -288,8 +288,8 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
       const initRes = await fetch('/api/youtube-upload-init', {
         method:  'POST',
         headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${token}`,
+          'Content-Type':   'application/json',
+          'X-Admin-Token':  token,
         },
         body:    JSON.stringify({ title: uploadTitle.trim(), contentType: uploadFile.type || 'video/mp4' }),
       })
@@ -313,7 +313,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
             'Content-Range':  `bytes ${offset}-${end - 1}/${total}`,
             'X-Upload-Url':   uploadUrl,
             'X-Content-Type': uploadFile.type || 'video/mp4',
-            'Authorization':  `Bearer ${token}`,
+            'X-Admin-Token':  token,
           },
           body: slice,
         })

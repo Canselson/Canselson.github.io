@@ -1,5 +1,5 @@
 async function requireAuth(req, res) {
-  const token = (req.headers.authorization ?? '').replace('Bearer ', '')
+  const token = req.headers['x-admin-token'] ?? ''
   if (!token) { res.status(401).json({ error: 'Unauthorized' }); return null }
   const response = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
     headers: {
