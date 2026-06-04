@@ -174,7 +174,7 @@ function GoalsSection({ goals }) {
             {period === 'OT' ? 'Overtime' : `Period ${period}`}
           </p>
           <div className="flex flex-col gap-1.5">
-            {pg.map((goal, i) => <GoalRow key={i} goal={goal} />)}
+            {pg.map((goal, i) => <GoalRow key={`${goal.period}-${goal.periodTime}-${goal.team}-${goal.scorer?.name ?? i}`} goal={goal} />)}
           </div>
         </div>
       ))}
@@ -221,7 +221,7 @@ function PenaltiesSection({ penalties }) {
             {period === 'OT' ? 'Overtime' : `Period ${period}`}
           </p>
           <div className="flex flex-col gap-1.5">
-            {pp.map((pen, i) => <PenaltyRow key={i} penalty={pen} />)}
+            {pp.map((pen, i) => <PenaltyRow key={`${pen.period}-${pen.periodTime}-${pen.team ?? i}-${pen.player?.name ?? i}`} penalty={pen} />)}
           </div>
         </div>
       ))}
@@ -283,7 +283,7 @@ function GoalieCard({ goalie, teamName, label, color }) {
       </div>
       <div className="grid grid-cols-3 gap-2 mt-3 text-center border-t border-white/5 pt-3">
         {goalie.periods.map((p, i) => (
-          <div key={i} className="text-white/30 text-xs">
+          <div key={`period-${i + 1}`} className="text-white/30 text-xs">
             <p className="font-bold text-white/50 mb-0.5">P{i + 1}</p>
             <p>{p.shots - p.goals}/{p.shots}</p>
           </div>

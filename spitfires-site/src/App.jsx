@@ -111,7 +111,7 @@ function Navbar() {
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-7 text-xs font-semibold tracking-widest uppercase text-white/60">
           <div className="relative group">
-            <button className="flex items-center gap-1 uppercase hover:text-white transition-colors py-1">
+            <button type="button" className="flex items-center gap-1 uppercase hover:text-white transition-colors py-1">
               Teams <ChevronDown size={12} className="mt-0.5" />
             </button>
             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-[#111827] border border-white/10 rounded-xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 min-w-[140px] shadow-2xl">
@@ -135,6 +135,7 @@ function Navbar() {
 
         {/* Mobile hamburger */}
         <button
+          type="button"
           onClick={() => setOpen(o => !o)}
           className="md:hidden text-white/60 hover:text-white transition-colors p-1"
           aria-label="Toggle menu"
@@ -173,6 +174,27 @@ function Navbar() {
 
 // ─── Home Page ────────────────────────────────────────────────────────────────
 
+const orgSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'SportsOrganization',
+  name: 'Southampton Spitfires',
+  sport: 'Ice Hockey',
+  url: 'https://southamptonspitfires.me',
+  logo: 'https://southamptonspitfires.me/logo.png',
+  sameAs: [
+    'https://www.instagram.com/southamptonspitfires/',
+    'https://www.youtube.com/@southamptonspitfires',
+    'https://buiha.org/club/southampton',
+  ],
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: 'University Road',
+    addressLocality: 'Southampton',
+    postalCode: 'SO17 1BJ',
+    addressCountry: 'GB',
+  },
+}
+
 function HomePage() {
   const [homeData, setHomeData] = useState(null)
 
@@ -204,27 +226,6 @@ function HomePage() {
       })
     })
   }, [])
-
-  const orgSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'SportsOrganization',
-    name: 'Southampton Spitfires',
-    sport: 'Ice Hockey',
-    url: 'https://southamptonspitfires.me',
-    logo: 'https://southamptonspitfires.me/logo.png',
-    sameAs: [
-      'https://www.instagram.com/southamptonspitfires/',
-      'https://www.youtube.com/@southamptonspitfires',
-      'https://buiha.org/club/southampton',
-    ],
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: 'University Road',
-      addressLocality: 'Southampton',
-      postalCode: 'SO17 1BJ',
-      addressCountry: 'GB',
-    },
-  }
 
   return (
     <>

@@ -110,27 +110,27 @@ async function buildSeasonContext(supabase, eventId, { homeTeamName, awayTeamNam
   const seasonStart = new Date(seasonYear,     7, 1).toISOString()
   const seasonEnd   = new Date(seasonYear + 1, 7, 1).toISOString()
 
-  // All games for this team in this season that have reports, excluding this game
-  const { data: pastEvents } = await supabase
-    .from('events')
-    .select('id, starts_at, opponent, home_away, match_reports(dgs_data)')
-    .eq('team', event.team)
-    .eq('type', 'game')
-    .gte('starts_at', seasonStart)
-    .lt('starts_at',  seasonEnd)
-    .neq('id', eventId)
-    .order('starts_at', { ascending: true })
-
-  // Next fixture for this team after this game's date
-  const { data: nextFixture } = await supabase
-    .from('events')
-    .select('starts_at, opponent, home_away, location')
-    .eq('team', event.team)
-    .eq('type', 'game')
-    .gt('starts_at', event.starts_at)
-    .order('starts_at', { ascending: true })
-    .limit(1)
-    .maybeSingle()
+  // All games for this team in this season that have reports (excluding this game) + next fixture
+  const [{ data: pastEvents }, { data: nextFixture }] = await Promise.all([
+    supabase
+      .from('events')
+      .select('id, starts_at, opponent, home_away, match_reports(dgs_data)')
+      .eq('team', event.team)
+      .eq('type', 'game')
+      .gte('starts_at', seasonStart)
+      .lt('starts_at',  seasonEnd)
+      .neq('id', eventId)
+      .order('starts_at', { ascending: true }),
+    supabase
+      .from('events')
+      .select('starts_at, opponent, home_away, location')
+      .eq('team', event.team)
+      .eq('type', 'game')
+      .gt('starts_at', event.starts_at)
+      .order('starts_at', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ])
 
   // Only past games that have dgs_data
   const completedGames = (pastEvents || []).filter(ev => ev.match_reports?.[0]?.dgs_data)

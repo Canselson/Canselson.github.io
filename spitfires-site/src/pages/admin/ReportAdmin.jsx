@@ -170,6 +170,7 @@ export default function ReportAdmin() {
   return (
     <div className="max-w-3xl">
       <button
+        type="button"
         onClick={() => navigate('/admin')}
         className="text-white/30 text-xs font-bold uppercase tracking-widest hover:text-white transition-colors mb-6 inline-block"
       >
@@ -226,6 +227,7 @@ export default function ReportAdmin() {
                     </p>
                   </div>
                   <button
+                    type="button"
                     onClick={() => { setDgsData(null); fileRef.current?.click() }}
                     className="text-xs font-bold uppercase tracking-widest text-white/30 hover:text-white transition-colors"
                   >
@@ -234,6 +236,7 @@ export default function ReportAdmin() {
                 </div>
               ) : (
                 <button
+                  type="button"
                   onClick={() => fileRef.current?.click()}
                   className="w-full border-2 border-dashed border-white/10 rounded-xl py-10 text-white/25 hover:border-white/25 hover:text-white/50 transition-colors flex flex-col items-center gap-2"
                 >
@@ -241,7 +244,7 @@ export default function ReportAdmin() {
                   <span className="text-xs font-bold uppercase tracking-widest">Upload .dgs file</span>
                 </button>
               )}
-              <input ref={fileRef} type="file" accept=".dgs" className="hidden" onChange={handleDgsFile} />
+              <input ref={fileRef} type="file" accept=".dgs" aria-label="Upload DGS gamesheet file" className="hidden" onChange={handleDgsFile} />
               {parseError && <p className="text-red-400 text-xs mt-3">{parseError}</p>}
             </>
           ) : (
@@ -284,6 +287,7 @@ export default function ReportAdmin() {
                 </p>
               </div>
               <button
+                type="button"
                 onClick={saveForfeit}
                 disabled={saving}
                 className="w-full py-3 rounded-lg text-xs font-black uppercase tracking-widest text-white bg-[#00436b] hover:bg-[#005a8f] disabled:opacity-40 transition-colors"
@@ -298,6 +302,7 @@ export default function ReportAdmin() {
               )}
               {report && !confirmRemove && (
                 <button
+                  type="button"
                   onClick={() => setConfirmRemove(true)}
                   className="flex items-center justify-center gap-1.5 text-white/25 hover:text-red-400 text-xs font-bold uppercase tracking-widest transition-colors"
                 >
@@ -307,10 +312,10 @@ export default function ReportAdmin() {
               {report && confirmRemove && (
                 <div className="flex items-center justify-center gap-3">
                   <span className="text-white/40 text-xs">Move back to pending?</span>
-                  <button onClick={removeReport} disabled={removing} className="text-red-400 hover:text-red-300 text-xs font-bold uppercase tracking-widest disabled:opacity-40">
+                  <button type="button" onClick={removeReport} disabled={removing} className="text-red-400 hover:text-red-300 text-xs font-bold uppercase tracking-widest disabled:opacity-40">
                     {removing ? 'Removing…' : 'Yes, remove'}
                   </button>
-                  <button onClick={() => setConfirmRemove(false)} className="text-white/25 hover:text-white text-xs font-bold uppercase tracking-widest">
+                  <button type="button" onClick={() => setConfirmRemove(false)} className="text-white/25 hover:text-white text-xs font-bold uppercase tracking-widest">
                     Cancel
                   </button>
                 </div>
@@ -330,6 +335,7 @@ export default function ReportAdmin() {
               ].map(t => (
                 <button
                   key={t.key}
+                  type="button"
                   onClick={() => setTab(t.key)}
                   className={`px-4 py-2.5 text-xs font-black uppercase tracking-widest transition-colors border-b-2 -mb-px ${
                     tab === t.key
@@ -365,6 +371,7 @@ export default function ReportAdmin() {
             </p>
             {dgsData && (
               <button
+                type="button"
                 onClick={generateReport}
                 disabled={generating}
                 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#7ec8e3] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
@@ -375,6 +382,7 @@ export default function ReportAdmin() {
             )}
           </div>
           <textarea
+            aria-label="Report narrative"
             value={reportText}
             onChange={e => setReportText(e.target.value)}
             rows={8}
@@ -392,6 +400,7 @@ export default function ReportAdmin() {
         {!forfeitMode &&
         <div className="flex items-center gap-4 flex-wrap">
           <button
+            type="button"
             onClick={save}
             disabled={saving || (!dgsData && !reportText.trim())}
             className="flex items-center gap-2 bg-[#00436b] hover:bg-[#005a8f] disabled:opacity-40 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-colors"
@@ -407,6 +416,7 @@ export default function ReportAdmin() {
           )}
           {report && !confirmRemove && (
             <button
+              type="button"
               onClick={() => setConfirmRemove(true)}
               className="flex items-center gap-1.5 text-white/25 hover:text-red-400 text-xs font-bold uppercase tracking-widest transition-colors ml-auto"
             >
@@ -417,6 +427,7 @@ export default function ReportAdmin() {
             <div className="flex items-center gap-3 ml-auto">
               <span className="text-white/40 text-xs">Move back to pending?</span>
               <button
+                type="button"
                 onClick={removeReport}
                 disabled={removing}
                 className="text-red-400 hover:text-red-300 text-xs font-bold uppercase tracking-widest transition-colors disabled:opacity-40"
@@ -424,6 +435,7 @@ export default function ReportAdmin() {
                 {removing ? 'Removing…' : 'Yes, remove'}
               </button>
               <button
+                type="button"
                 onClick={() => setConfirmRemove(false)}
                 className="text-white/25 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors"
               >
@@ -453,7 +465,7 @@ function GoalsPreview({ goals }) {
   return (
     <div className="flex flex-col">
       {goals.map((g, i) => (
-        <div key={i} className="flex items-center gap-3 py-2.5 border-b border-white/5 last:border-0 text-sm">
+        <div key={`${g.period}-${g.periodTime}-${g.team}-${g.scorer?.name ?? i}`} className="flex items-center gap-3 py-2.5 border-b border-white/5 last:border-0 text-sm">
           <span className="text-white/30 text-xs font-mono w-9 shrink-0 tabular-nums">{g.periodTime}</span>
           <span className="text-white/25 text-xs w-5 shrink-0">P{g.period}</span>
           <span
@@ -483,7 +495,7 @@ function PenaltiesPreview({ penalties }) {
   return (
     <div className="flex flex-col">
       {penalties.map((p, i) => (
-        <div key={i} className="flex items-center gap-3 py-2.5 border-b border-white/5 last:border-0 text-sm">
+        <div key={`${p.period}-${p.periodTime}-${p.team ?? i}-${p.player?.name ?? i}`} className="flex items-center gap-3 py-2.5 border-b border-white/5 last:border-0 text-sm">
           <span className="text-white/30 text-xs font-mono w-9 shrink-0 tabular-nums">{p.periodTime}</span>
           <span className="text-white/25 text-xs w-5 shrink-0">P{p.period}</span>
           <span

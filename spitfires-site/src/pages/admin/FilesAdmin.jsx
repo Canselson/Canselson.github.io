@@ -5,6 +5,17 @@ import { Plus, Upload, Download, Trash2, ChevronDown, ChevronUp, Pencil, FileTex
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+async function downloadVersion(filePath, fileName) {
+  const { data, error } = await supabase.storage
+    .from('documents')
+    .createSignedUrl(filePath, 60)
+  if (error) { alert('Could not generate download link'); return }
+  const a = document.createElement('a')
+  a.href = data.signedUrl
+  a.download = fileName
+  a.click()
+}
+
 export default function FilesAdmin() {
   const { session } = useAuth()
   const [documents, setDocuments]         = useState([])
@@ -121,17 +132,6 @@ export default function FilesAdmin() {
     fetchVersions(docId)
   }
 
-  async function downloadVersion(filePath, fileName) {
-    const { data, error } = await supabase.storage
-      .from('documents')
-      .createSignedUrl(filePath, 60)
-    if (error) { alert('Could not generate download link'); return }
-    const a = document.createElement('a')
-    a.href = data.signedUrl
-    a.download = fileName
-    a.click()
-  }
-
   async function deleteVersion(version) {
     await supabase.storage.from('documents').remove([version.file_path])
     await supabase.from('document_versions').delete().eq('id', version.id)
@@ -165,6 +165,7 @@ export default function FilesAdmin() {
           <p className="text-white/40 text-xs mt-0.5">Club documents and version history</p>
         </div>
         <button
+          type="button"
           onClick={() => setDocModal({ mode: 'add' })}
           className="flex items-center gap-2 bg-[#00436b] hover:bg-[#005a8f] text-white text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors"
         >
@@ -209,7 +210,7 @@ export default function FilesAdmin() {
         </div>
       )}
 
-      <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
+      <input ref={fileInputRef} type="file" aria-label="Upload document version" className="hidden" onChange={handleFileChange} />
 
       {docModal && (
         <DocModal
@@ -268,6 +269,7 @@ function DocumentCard({ doc, expanded, versions, versionsLoading, onToggle, onEd
           {versionCount} version{versionCount !== 1 ? 's' : ''}
         </span>
         <button
+          type="button"
           onClick={onToggleVisibility}
           title={doc.is_public ? 'Public — click to make private' : 'Private — click to make public'}
           className="flex items-center gap-1.5 shrink-0 group"
@@ -280,19 +282,19 @@ function DocumentCard({ doc, expanded, versions, versionsLoading, onToggle, onEd
           </div>
         </button>
         <div className="flex items-center gap-0.5 shrink-0">
-          <button onClick={onUpload} title="Upload new version"
+          <button type="button" onClick={onUpload} title="Upload new version"
             className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors">
             <Upload size={14} />
           </button>
-          <button onClick={onEdit} title="Edit"
+          <button type="button" onClick={onEdit} title="Edit"
             className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors">
             <Pencil size={14} />
           </button>
-          <button onClick={onDelete} title="Delete document"
+          <button type="button" onClick={onDelete} title="Delete document"
             className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors">
             <Trash2 size={14} />
           </button>
-          <button onClick={onToggle} title={expanded ? 'Collapse' : 'Show versions'}
+          <button type="button" onClick={onToggle} title={expanded ? 'Collapse' : 'Show versions'}
             className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors">
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
@@ -331,11 +333,11 @@ function DocumentCard({ doc, expanded, versions, versionsLoading, onToggle, onEd
                     <td className="px-3 py-3 text-white/40 hidden lg:table-cell">{formatSize(v.file_size)}</td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-0.5 justify-end">
-                        <button onClick={() => onDownload(v.file_path, v.file_name)} title="Download"
+                        <button type="button" onClick={() => onDownload(v.file_path, v.file_name)} title="Download"
                           className="p-1.5 rounded text-white/40 hover:text-white hover:bg-white/5 transition-colors">
                           <Download size={13} />
                         </button>
-                        <button onClick={() => onDeleteVersion(v)} title="Delete version"
+                        <button type="button" onClick={() => onDeleteVersion(v)} title="Delete version"
                           className="p-1.5 rounded text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors">
                           <Trash2 size={13} />
                         </button>
@@ -375,7 +377,7 @@ function DocModal({ mode, initialDoc, onClose, onSaved }) {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={onClose} onKeyDown={e => { if (e.key === 'Escape') onClose() }} />
       <div className="fixed z-50 inset-x-4 top-1/2 -translate-y-1/2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[420px] bg-[#111827] border border-white/10 rounded-2xl p-6">
         <p className="text-white font-bold mb-5">{mode === 'add' ? 'New Document' : 'Edit Document'}</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -427,16 +429,16 @@ function ConfirmModal({ message, onConfirm, onClose, confirmLabel = 'Delete', co
   async function confirm() { setLoading(true); await onConfirm() }
   return (
     <>
-      <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={onClose} onKeyDown={e => { if (e.key === 'Escape') onClose() }} />
       <div className="fixed z-50 inset-x-4 top-1/2 -translate-y-1/2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[380px] bg-[#111827] border border-white/10 rounded-2xl p-6">
         <p className="text-white font-bold mb-2">Are you sure?</p>
         <p className="text-white/50 text-sm mb-6">{message}</p>
         <div className="flex gap-3">
-          <button onClick={onClose}
+          <button type="button" onClick={onClose}
             className="flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-white/50 bg-white/5 hover:bg-white/10 transition-colors">
             Cancel
           </button>
-          <button onClick={confirm} disabled={loading}
+          <button type="button" onClick={confirm} disabled={loading}
             className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-white disabled:opacity-50 transition-colors ${confirmClass}`}>
             {loading ? 'Saving…' : confirmLabel}
           </button>

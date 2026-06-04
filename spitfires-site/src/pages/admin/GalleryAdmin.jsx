@@ -48,7 +48,7 @@ function AlbumList() {
       .then(r => r.json())
       .then(setStorageStats)
       .catch(() => {})
-  }, [])
+  }, [session])
 
   async function deleteAlbum(album) {
     await supabase.from('media_albums').delete().eq('id', album.id)
@@ -64,6 +64,7 @@ function AlbumList() {
           <p className="text-white/40 text-sm mt-1">Manage photo albums</p>
         </div>
         <button
+          type="button"
           onClick={() => setPanelAlbum(EMPTY_ALBUM)}
           className="flex items-center gap-2 bg-[#00436b] hover:bg-[#005a8f] text-white text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors"
         >
@@ -142,18 +143,21 @@ function AlbumRow({ album, onEdit, onDelete, onOpen }) {
       {/* Actions */}
       <div className="flex gap-1 shrink-0">
         <button
+          type="button"
           onClick={onOpen}
           className="px-3 py-2 rounded-lg text-white/40 hover:text-[#7ec8e3] hover:bg-[#00436b]/20 text-xs font-bold uppercase tracking-widest transition-colors"
         >
           Open
         </button>
         <button
+          type="button"
           onClick={onEdit}
           className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
         >
           <Pencil size={14} />
         </button>
         <button
+          type="button"
           onClick={onDelete}
           className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-400/10 transition-colors"
         >
@@ -203,7 +207,7 @@ function AlbumEditor({ albumId }) {
       .then(r => r.json())
       .then(setStorageStats)
       .catch(() => {})
-  }, [])
+  }, [session])
 
   const storageBlocked = storageStats != null && storageStats.usedBytes >= storageStats.limitBytes
 
@@ -279,6 +283,7 @@ function AlbumEditor({ albumId }) {
   return (
     <div>
       <button
+        type="button"
         onClick={() => navigate('/admin/gallery')}
         className="text-white/30 text-xs font-bold uppercase tracking-widest hover:text-white transition-colors mb-6 inline-block"
       >
@@ -294,6 +299,7 @@ function AlbumEditor({ albumId }) {
           </p>
         </div>
         <button
+          type="button"
           onClick={() => fileRef.current?.click()}
           disabled={uploading || storageBlocked}
           className="flex items-center gap-2 bg-[#00436b] hover:bg-[#005a8f] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors"
@@ -301,7 +307,7 @@ function AlbumEditor({ albumId }) {
           <Upload size={14} />
           {uploading ? `Uploading ${progress.done} / ${progress.total}…` : 'Add Photos'}
         </button>
-        <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} />
+        <input ref={fileRef} type="file" accept="image/*" multiple aria-label="Upload photos" className="hidden" onChange={handleUpload} />
       </div>
 
       {storageBlocked && (
@@ -316,6 +322,7 @@ function AlbumEditor({ albumId }) {
 
       {photos.length === 0 && !uploading ? (
         <button
+          type="button"
           onClick={() => !storageBlocked && fileRef.current?.click()}
           disabled={storageBlocked}
           className="w-full border-2 border-dashed border-white/10 rounded-xl py-16 text-white/25 hover:border-white/25 hover:text-white/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex flex-col items-center gap-2"
@@ -339,6 +346,7 @@ function AlbumEditor({ albumId }) {
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                 {album.cover_url !== photo.url && (
                   <button
+                    type="button"
                     onClick={() => handleSetCover(photo.url)}
                     title="Set as cover"
                     className="p-2 bg-white/15 hover:bg-white/25 rounded-lg transition-colors"
@@ -347,6 +355,7 @@ function AlbumEditor({ albumId }) {
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={() => setDeleteTarget(photo)}
                   className="p-2 bg-red-600/80 hover:bg-red-600 rounded-lg transition-colors"
                 >
@@ -402,13 +411,13 @@ function AlbumFormPanel({ initial, onClose, onSaved }) {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm" onClick={onClose} onKeyDown={e => { if (e.key === 'Escape') onClose() }} />
       <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] bg-[#111827] border-l border-white/10 flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 shrink-0">
           <h2 className="text-white font-black uppercase tracking-widest text-sm">
             {isNew ? 'New Album' : 'Edit Album'}
           </h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+          <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -417,6 +426,7 @@ function AlbumFormPanel({ initial, onClose, onSaved }) {
           <Field label="Title *">
             <input
               type="text"
+              aria-label="Album title"
               value={form.title}
               onChange={set('title')}
               placeholder="e.g. A Team vs Bristol — 19 Apr 2025"
@@ -426,7 +436,7 @@ function AlbumFormPanel({ initial, onClose, onSaved }) {
           </Field>
 
           <Field label="Date">
-            <input type="date" value={form.date} onChange={set('date')} className={inputClass} />
+            <input type="date" aria-label="Album date" value={form.date} onChange={set('date')} className={inputClass} />
           </Field>
 
           <Field label="Team">
@@ -457,6 +467,7 @@ function AlbumFormPanel({ initial, onClose, onSaved }) {
 
           <Field label="Description">
             <textarea
+              aria-label="Album description"
               value={form.description}
               onChange={set('description')}
               rows={3}
@@ -499,7 +510,7 @@ function DeleteModal({ message, onCancel, onConfirm }) {
   const [deleting, setDeleting] = useState(false)
   return (
     <>
-      <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={onCancel} />
+      <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={onCancel} onKeyDown={e => { if (e.key === 'Escape') onCancel() }} />
       <div className="fixed z-50 inset-x-4 top-1/2 -translate-y-1/2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[380px] bg-[#111827] border border-white/10 rounded-2xl p-6">
         <div className="flex items-start gap-4 mb-6">
           <div className="p-2 rounded-lg bg-red-400/10 shrink-0">
@@ -512,12 +523,14 @@ function DeleteModal({ message, onCancel, onConfirm }) {
         </div>
         <div className="flex gap-3">
           <button
+            type="button"
             onClick={onCancel}
             className="flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-white/50 bg-white/5 hover:bg-white/10 transition-colors"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={async () => { setDeleting(true); await onConfirm() }}
             disabled={deleting}
             className="flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"

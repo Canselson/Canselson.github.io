@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
@@ -14,8 +14,9 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
+  const value = useMemo(() => ({ session, user: session?.user ?? null }), [session])
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )

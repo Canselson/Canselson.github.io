@@ -36,7 +36,7 @@ export default function TrainingPage() {
       setEvent(ev)
       if (plan) {
         setHasPlan(true)
-        const sorted = [...(plan.training_sections || [])].sort((a, b) => a.sort_order - b.sort_order)
+        const sorted = (plan.training_sections || []).toSorted((a, b) => a.sort_order - b.sort_order)
         setSections(sorted)
       }
       setLoading(false)
@@ -162,6 +162,7 @@ function PlanSection({ section, index }) {
             className="absolute inset-0 w-full h-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
+            sandbox="allow-scripts allow-popups allow-forms allow-presentation"
             title={section.heading || `Section ${index + 1}`}
           />
         </div>

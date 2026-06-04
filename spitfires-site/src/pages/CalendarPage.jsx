@@ -105,6 +105,7 @@ export default function CalendarPage() {
       {/* Filter pills */}
       <div className="flex flex-wrap gap-2 mb-6">
         <button
+          type="button"
           onClick={() => setActiveFilter(null)}
           className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${
             activeFilter === null
@@ -117,6 +118,7 @@ export default function CalendarPage() {
         {Object.entries(EVENT_TYPES).map(([type, { label, color }]) => (
           <button
             key={type}
+            type="button"
             onClick={() => handleFilterClick(type)}
             className="px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all"
             style={
@@ -136,6 +138,7 @@ export default function CalendarPage() {
         {/* Month navigation */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
           <button
+            type="button"
             onClick={prevMonth}
             className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors"
           >
@@ -145,6 +148,7 @@ export default function CalendarPage() {
             {viewDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
           </h2>
           <button
+            type="button"
             onClick={nextMonth}
             className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors"
           >
@@ -205,6 +209,7 @@ function DayCell({ day, events, isToday, isSelected, onClick }) {
 
   return (
     <button
+      type="button"
       onClick={() => onClick(day)}
       className={`min-h-[4.5rem] sm:min-h-[5.5rem] rounded-xl p-1.5 sm:p-2 text-left w-full
         transition-all duration-150
@@ -374,7 +379,7 @@ function SubscribeSection() {
         className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider text-white bg-[#1d1d1f] border border-white/10 hover:bg-[#2d2d2f] transition-colors">
         Apple
       </a>
-      <button onClick={copyURL}
+      <button type="button" onClick={copyURL}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider text-white/50 bg-white/5 border border-white/10 hover:text-white hover:bg-white/10 transition-colors">
         {copied ? <><Check size={11} />Copied</> : <><Copy size={11} />Copy URL</>}
       </button>

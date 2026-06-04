@@ -86,6 +86,7 @@ export default function JoinPage() {
         <Field label="Name *">
           <input
             type="text"
+            aria-label="Name"
             value={form.name}
             onChange={set('name')}
             required
@@ -97,6 +98,7 @@ export default function JoinPage() {
         <Field label="Mobile Number *">
           <input
             type="tel"
+            aria-label="Mobile number"
             value={form.mobile}
             onChange={set('mobile')}
             required
@@ -107,6 +109,7 @@ export default function JoinPage() {
 
         <Field label="Hockey Skill Level">
           <select
+            aria-label="Hockey skill level"
             value={form.skill_level}
             onChange={set('skill_level')}
             className={inputClass}
@@ -120,6 +123,7 @@ export default function JoinPage() {
         <Field label="University">
           <input
             type="text"
+            aria-label="University"
             value={form.university}
             onChange={set('university')}
             placeholder="e.g. University of Southampton"
@@ -129,6 +133,7 @@ export default function JoinPage() {
 
         <Field label="Message *">
           <textarea
+            aria-label="Message"
             value={form.message}
             onChange={set('message')}
             required
@@ -178,10 +183,10 @@ export default function JoinPage() {
 
 function Field({ label, children }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-white/50 text-xs font-bold uppercase tracking-widest">{label}</label>
+    <label className="flex flex-col gap-1.5">
+      <span className="text-white/50 text-xs font-bold uppercase tracking-widest">{label}</span>
       {children}
-    </div>
+    </label>
   )
 }
 

@@ -207,7 +207,7 @@ export default function StatsAdmin() {
     if (!allGames) return []
     const years = new Set(allGames.map(g => getAcademicYear(g.starts_at)))
     years.add(currentAcademicYear())
-    return [...years].sort((a, b) => b - a)
+    return [...years].toSorted((a, b) => b - a)
   }, [allGames])
 
   const filteredGames = useMemo(() => {
@@ -314,6 +314,7 @@ function PlayerStatsView({ games, tab, setTab }) {
         {[['skaters', 'Skaters'], ['goalies', 'Goalies']].map(([val, lbl]) => (
           <button
             key={val}
+            type="button"
             onClick={() => setTab(val)}
             className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
               tab === val
@@ -388,7 +389,7 @@ function SortTable({ cols, rows, defaultSortKey, rowKey }) {
   }
 
   const sorted = useMemo(() => {
-    return [...rows].sort((a, b) => {
+    return rows.toSorted((a, b) => {
       let av = a[sortKey]
       let bv = b[sortKey]
       if (av == null) return 1

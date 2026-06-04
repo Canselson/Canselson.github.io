@@ -3,6 +3,17 @@ import { supabase } from '../lib/supabase'
 import { FileText, Download } from 'lucide-react'
 import PageMeta from '../components/PageMeta'
 
+async function download(filePath, fileName) {
+  const { data, error } = await supabase.storage
+    .from('documents')
+    .createSignedUrl(filePath, 60)
+  if (error) { alert('Could not generate download link'); return }
+  const a = document.createElement('a')
+  a.href = data.signedUrl
+  a.download = fileName
+  a.click()
+}
+
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState([])
   const [loading, setLoading]     = useState(true)
@@ -19,24 +30,13 @@ export default function DocumentsPage() {
         (data ?? []).map(doc => ({
           ...doc,
           latestVersion: doc.document_versions
-            ?.sort((a, b) => b.version_number - a.version_number)[0] ?? null,
+            ?.reduce((best, v) => !best || v.version_number > best.version_number ? v : best, undefined) ?? null,
         }))
       )
       setLoading(false)
     }
     fetchDocs()
   }, [])
-
-  async function download(filePath, fileName) {
-    const { data, error } = await supabase.storage
-      .from('documents')
-      .createSignedUrl(filePath, 60)
-    if (error) { alert('Could not generate download link'); return }
-    const a = document.createElement('a')
-    a.href = data.signedUrl
-    a.download = fileName
-    a.click()
-  }
 
   return (
     <>
@@ -84,6 +84,7 @@ export default function DocumentsPage() {
               </div>
               {doc.latestVersion ? (
                 <button
+                  type="button"
                   onClick={() => download(doc.latestVersion.file_path, doc.latestVersion.file_name)}
                   className="flex items-center gap-2 bg-[#00436b] hover:bg-[#005a8f] text-white text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-colors shrink-0"
                 >

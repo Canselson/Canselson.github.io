@@ -98,6 +98,7 @@ export default function AlbumPage() {
           {photos.map((photo, i) => (
             <button
               key={photo.id}
+              type="button"
               onClick={() => setLightboxIndex(i)}
               className="aspect-square rounded-lg overflow-hidden group relative bg-[#111827] block"
             >
@@ -139,9 +140,11 @@ function Lightbox({ photos, index, onClose, onPrev, onNext }) {
     <div
       className="fixed inset-0 z-50 bg-black/96 flex items-center justify-center"
       onClick={onClose}
+      onKeyDown={e => { if (e.key === 'Escape') onClose() }}
     >
       {/* Close */}
       <button
+        type="button"
         className="absolute top-4 right-4 p-2 text-white/50 hover:text-white transition-colors z-10"
         onClick={onClose}
       >
@@ -156,6 +159,7 @@ function Lightbox({ photos, index, onClose, onPrev, onNext }) {
       {/* Prev */}
       {index > 0 && (
         <button
+          type="button"
           className="absolute left-2 sm:left-5 p-2 text-white/40 hover:text-white transition-colors z-10"
           onClick={e => { e.stopPropagation(); onPrev() }}
         >
@@ -178,6 +182,7 @@ function Lightbox({ photos, index, onClose, onPrev, onNext }) {
       {/* Next */}
       {index < photos.length - 1 && (
         <button
+          type="button"
           className="absolute right-2 sm:right-5 p-2 text-white/40 hover:text-white transition-colors z-10"
           onClick={e => { e.stopPropagation(); onNext() }}
         >

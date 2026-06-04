@@ -96,12 +96,14 @@ export default function CalendarAdmin() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => setShowImport(true)}
             className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors"
           >
             <FileImage size={14} /> Import
           </button>
           <button
+            type="button"
             onClick={openNew}
             className="flex items-center gap-2 bg-[#00436b] hover:bg-[#005a8f] text-white text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors"
           >
@@ -113,6 +115,7 @@ export default function CalendarAdmin() {
       {/* Event type filter */}
       <div className="flex flex-wrap gap-2 mb-6">
         <button
+          type="button"
           onClick={() => setActiveType(null)}
           className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${
             activeType === null
@@ -125,6 +128,7 @@ export default function CalendarAdmin() {
         {Object.entries(EVENT_TYPES).map(([type, { label, color }]) => (
           <button
             key={type}
+            type="button"
             onClick={() => setActiveType(prev => prev === type ? null : type)}
             className="px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all"
             style={
@@ -143,6 +147,7 @@ export default function CalendarAdmin() {
         {tabs.map(tab => (
           <button
             key={tab.key}
+            type="button"
             onClick={() => setActiveTab(tab.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest rounded-t-lg transition-colors border-b-2 -mb-px ${
               activeTab === tab.key
@@ -318,6 +323,7 @@ function EventRow({ event, onEdit, onDuplicate, onDelete, onReport, onPlan, dimm
       <div className="flex items-center gap-1 shrink-0 ml-auto">
         {pending && onReport && (
           <button
+            type="button"
             onClick={() => onReport(event)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
           >
@@ -326,6 +332,7 @@ function EventRow({ event, onEdit, onDuplicate, onDelete, onReport, onPlan, dimm
         )}
         {!pending && dimmed && event.type === 'game' && onReport && (
           <button
+            type="button"
             onClick={() => onReport(event)}
             title="Edit match report"
             className="p-2 rounded-lg text-white/40 hover:text-[#7ec8e3] hover:bg-[#00436b]/20 transition-colors"
@@ -335,6 +342,7 @@ function EventRow({ event, onEdit, onDuplicate, onDelete, onReport, onPlan, dimm
         )}
         {event.type === 'training' && onPlan && (
           <button
+            type="button"
             onClick={() => onPlan(event)}
             title="Edit training plan"
             className="p-2 rounded-lg text-white/40 hover:text-[#7ec8e3] hover:bg-[#00436b]/20 transition-colors"
@@ -343,6 +351,7 @@ function EventRow({ event, onEdit, onDuplicate, onDelete, onReport, onPlan, dimm
           </button>
         )}
         <button
+          type="button"
           onClick={() => onDuplicate(event)}
           title="Duplicate event"
           className="p-2 rounded-lg text-white/40 hover:text-green-400 hover:bg-green-400/10 transition-colors"
@@ -350,12 +359,14 @@ function EventRow({ event, onEdit, onDuplicate, onDelete, onReport, onPlan, dimm
           <Copy size={14} />
         </button>
         <button
+          type="button"
           onClick={() => onEdit(event)}
           className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
         >
           <Pencil size={14} />
         </button>
         <button
+          type="button"
           onClick={() => onDelete(event)}
           className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-400/10 transition-colors"
         >
@@ -398,6 +409,7 @@ function EventFormPanel({ initial, onClose, onSaved }) {
       <div
         className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
         onClick={onClose}
+        onKeyDown={e => { if (e.key === 'Escape') onClose() }}
       />
 
       {/* Panel */}
@@ -407,7 +419,7 @@ function EventFormPanel({ initial, onClose, onSaved }) {
           <h2 className="text-white font-black uppercase tracking-widest text-sm">
             {isNew ? 'Add Event' : 'Edit Event'}
           </h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+          <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -490,6 +502,7 @@ function EventFormPanel({ initial, onClose, onSaved }) {
             <div className="flex gap-2">
               <input
                 type="date"
+                aria-label="Start date"
                 value={form.startDate}
                 onChange={set('startDate')}
                 required
@@ -497,6 +510,7 @@ function EventFormPanel({ initial, onClose, onSaved }) {
               />
               <input
                 type="time"
+                aria-label="Start time"
                 value={form.startTime}
                 onChange={set('startTime')}
                 required
@@ -510,12 +524,14 @@ function EventFormPanel({ initial, onClose, onSaved }) {
             <div className="flex gap-2">
               <input
                 type="date"
+                aria-label="End date"
                 value={form.endDate}
                 onChange={set('endDate')}
                 className={inputClass}
               />
               <input
                 type="time"
+                aria-label="End time"
                 value={form.endTime}
                 onChange={set('endTime')}
                 className={`${inputClass} w-32 shrink-0`}
@@ -531,6 +547,7 @@ function EventFormPanel({ initial, onClose, onSaved }) {
           {/* Description */}
           <Field label="Description">
             <textarea
+              aria-label="Description"
               value={form.description}
               onChange={set('description')}
               rows={3}
@@ -628,19 +645,17 @@ function ImportFixturesModal({ onClose, onImported }) {
 
   async function handleImport() {
     setImporting(true)
-    const toInsert = rows
-      .filter(r => r.included)
-      .map(r => ({
-        type:        'game',
-        team,
-        title:       `vs ${r.opponent}`,
-        opponent:    r.opponent,
-        home_away:   r.home_away,
-        starts_at:   new Date(`${r.date}T${r.time}`).toISOString(),
-        ends_at:     null,
-        location:    r.location || null,
-        description: null,
-      }))
+    const toInsert = rows.flatMap(r => r.included ? [{
+      type:        'game',
+      team,
+      title:       `vs ${r.opponent}`,
+      opponent:    r.opponent,
+      home_away:   r.home_away,
+      starts_at:   new Date(`${r.date}T${r.time}`).toISOString(),
+      ends_at:     null,
+      location:    r.location || null,
+      description: null,
+    }] : [])
     await supabase.from('events').insert(toInsert)
     onImported()
   }
@@ -649,7 +664,7 @@ function ImportFixturesModal({ onClose, onImported }) {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={onClose} onKeyDown={e => { if (e.key === 'Escape') onClose() }} />
       <div className="fixed inset-0 z-50 overflow-y-auto">
         <div className="min-h-full flex items-start justify-center p-4 pt-10 pb-10">
           <div className="w-full max-w-2xl bg-[#111827] border border-white/10 rounded-2xl overflow-hidden">
@@ -660,7 +675,7 @@ function ImportFixturesModal({ onClose, onImported }) {
                 <h2 className="text-white font-black uppercase tracking-widest text-sm">Import Fixtures</h2>
                 <p className="text-white/30 text-xs mt-0.5">Photo of a fixture list → events</p>
               </div>
-              <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+              <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -713,6 +728,7 @@ function ImportFixturesModal({ onClose, onImported }) {
                   ref={fileRef}
                   type="file"
                   accept="image/*"
+                  aria-label="Upload fixture list photo"
                   className="hidden"
                   onChange={handleFile}
                 />
@@ -756,6 +772,7 @@ function ImportFixturesModal({ onClose, onImported }) {
                           </button>
                           <input
                             type="text"
+                            aria-label="Opponent"
                             value={row.opponent}
                             onChange={e => updateRow(i, 'opponent', e.target.value)}
                             placeholder="Opponent"
@@ -783,18 +800,21 @@ function ImportFixturesModal({ onClose, onImported }) {
                         <div className="flex items-center gap-2 pl-8">
                           <input
                             type="date"
+                            aria-label="Match date"
                             value={row.date}
                             onChange={e => updateRow(i, 'date', e.target.value)}
                             className="bg-[#0a0f1a] border border-white/10 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-[#00436b] transition-colors"
                           />
                           <input
                             type="time"
+                            aria-label="Match time"
                             value={row.time}
                             onChange={e => updateRow(i, 'time', e.target.value)}
                             className="bg-[#0a0f1a] border border-white/10 rounded-lg px-3 py-1.5 text-white text-xs w-28 focus:outline-none focus:border-[#00436b] transition-colors"
                           />
                           <input
                             type="text"
+                            aria-label="Location"
                             value={row.location}
                             onChange={e => updateRow(i, 'location', e.target.value)}
                             placeholder="Location (optional)"
@@ -847,7 +867,7 @@ function DeleteModal({ event, onCancel, onDeleted }) {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={onCancel} />
+      <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={onCancel} onKeyDown={e => { if (e.key === 'Escape') onCancel() }} />
       <div className="fixed z-50 inset-x-4 top-1/2 -translate-y-1/2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[400px] bg-[#111827] border border-white/10 rounded-2xl p-6">
         <div className="flex items-start gap-4 mb-6">
           <div className="p-2 rounded-lg bg-red-400/10 shrink-0">
@@ -862,12 +882,14 @@ function DeleteModal({ event, onCancel, onDeleted }) {
         </div>
         <div className="flex gap-3">
           <button
+            type="button"
             onClick={onCancel}
             className="flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-white/50 bg-white/5 hover:bg-white/10 transition-colors"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={confirm}
             disabled={deleting}
             className="flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"

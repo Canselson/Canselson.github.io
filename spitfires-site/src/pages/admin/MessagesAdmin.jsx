@@ -113,6 +113,7 @@ function MessageRow({ message, expanded, onToggle, onDelete }) {
     }`}>
       {/* Row header — always visible */}
       <button
+        type="button"
         onClick={onToggle}
         className="w-full flex items-center gap-3 px-4 py-4 text-left hover:bg-white/5 transition-colors"
       >
@@ -177,6 +178,7 @@ function MessageRow({ message, expanded, onToggle, onDelete }) {
             </p>
             {message.read && (
               <button
+                type="button"
                 onClick={onDelete}
                 className="flex items-center gap-1.5 text-white/25 hover:text-red-400 text-xs font-bold uppercase tracking-widest transition-colors"
               >
@@ -205,7 +207,7 @@ function DeleteModal({ name, onCancel, onConfirm }) {
   const [deleting, setDeleting] = useState(false)
   return (
     <>
-      <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={onCancel} />
+      <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={onCancel} onKeyDown={e => { if (e.key === 'Escape') onCancel() }} />
       <div className="fixed z-50 inset-x-4 top-1/2 -translate-y-1/2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[380px] bg-[#111827] border border-white/10 rounded-2xl p-6">
         <div className="flex items-start gap-4 mb-6">
           <div className="p-2 rounded-lg bg-red-400/10 shrink-0">
@@ -220,12 +222,14 @@ function DeleteModal({ name, onCancel, onConfirm }) {
         </div>
         <div className="flex gap-3">
           <button
+            type="button"
             onClick={onCancel}
             className="flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-white/50 bg-white/5 hover:bg-white/10 transition-colors"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={async () => { setDeleting(true); await onConfirm() }}
             disabled={deleting}
             className="flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"

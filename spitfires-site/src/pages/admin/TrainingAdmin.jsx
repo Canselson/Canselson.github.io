@@ -58,7 +58,7 @@ export default function TrainingAdmin() {
       setEvent(ev)
       if (plan) {
         setPlanId(plan.id)
-        const sorted = [...(plan.training_sections || [])].sort((a, b) => a.sort_order - b.sort_order)
+        const sorted = (plan.training_sections || []).toSorted((a, b) => a.sort_order - b.sort_order)
         setSections(sorted.map(s => ({ ...s, _key: s.id })))
       }
       setLoading(false)
@@ -195,6 +195,7 @@ export default function TrainingAdmin() {
   return (
     <div>
       <button
+        type="button"
         onClick={() => navigate('/admin')}
         className="text-white/30 text-xs font-bold uppercase tracking-widest hover:text-white transition-colors mb-6 inline-block"
       >
@@ -213,6 +214,7 @@ export default function TrainingAdmin() {
             </span>
           )}
           <button
+            type="button"
             onClick={handleSave}
             disabled={saving}
             className="flex items-center gap-2 bg-[#00436b] hover:bg-[#005a8f] disabled:opacity-50 text-white text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg transition-colors"
@@ -244,6 +246,7 @@ export default function TrainingAdmin() {
       </div>
 
       <button
+        type="button"
         onClick={addSection}
         className="flex items-center gap-2 w-full justify-center bg-white/5 hover:bg-white/10 border-2 border-dashed border-white/10 hover:border-white/25 text-white/40 hover:text-white text-xs font-bold uppercase tracking-widest px-4 py-4 rounded-xl transition-colors"
       >
@@ -350,6 +353,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
         </span>
         <div className="flex items-center gap-1">
           <button
+            type="button"
             onClick={() => onMove(-1)}
             disabled={index === 0}
             title="Move up"
@@ -358,6 +362,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
             <ChevronUp size={14} />
           </button>
           <button
+            type="button"
             onClick={() => onMove(1)}
             disabled={index === total - 1}
             title="Move down"
@@ -366,6 +371,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
             <ChevronDown size={14} />
           </button>
           <button
+            type="button"
             onClick={onRemove}
             title="Delete section"
             className="p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-400/10 transition-colors ml-1"
@@ -380,6 +386,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
         <SField label="Heading">
           <input
             type="text"
+            aria-label="Section heading"
             value={section.heading || ''}
             onChange={e => onUpdate('heading', e.target.value)}
             placeholder="e.g. Warm Up, Power Play Drill…"
@@ -389,6 +396,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
 
         <SField label="Notes">
           <textarea
+            aria-label="Section notes"
             value={section.body || ''}
             onChange={e => onUpdate('body', e.target.value)}
             rows={4}
@@ -402,6 +410,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
             <div className="relative rounded-xl overflow-hidden bg-[#0a0f1a] border border-white/10">
               <img src={section.image_url} alt="" className="w-full object-contain max-h-64" />
               <button
+                type="button"
                 onClick={onImageRemove}
                 className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-600 rounded-lg text-white transition-colors"
               >
@@ -410,6 +419,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
             </div>
           ) : (
             <button
+              type="button"
               onClick={() => fileRef.current?.click()}
               disabled={section._uploading}
               className="w-full border-2 border-dashed border-white/10 rounded-xl py-6 text-white/25 hover:border-white/25 hover:text-white/50 disabled:opacity-40 transition-colors flex flex-col items-center gap-2"
@@ -431,6 +441,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
             ref={fileRef}
             type="file"
             accept="image/*"
+            aria-label="Upload section image"
             className="hidden"
             onChange={e => {
               const file = e.target.files?.[0]
@@ -449,6 +460,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
             <div className="flex flex-col gap-2">
               <input
                 type="text"
+                aria-label="Video title"
                 value={uploadTitle}
                 onChange={e => setUploadTitle(e.target.value)}
                 placeholder="Video title (e.g. Power Play Drill — 14 Jan)"
@@ -460,13 +472,14 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
                 <div className="flex items-center gap-2 bg-[#0a0f1a] border border-white/10 rounded-lg px-4 py-2.5">
                   <span className="text-white/60 text-sm truncate flex-1">{uploadFile.name}</span>
                   {!isUploading && (
-                    <button onClick={() => setUploadFile(null)} className="text-white/30 hover:text-white transition-colors shrink-0">
+                    <button type="button" onClick={() => setUploadFile(null)} className="text-white/30 hover:text-white transition-colors shrink-0">
                       <X size={14} />
                     </button>
                   )}
                 </div>
               ) : (
                 <button
+                  type="button"
                   onClick={() => videoFileRef.current?.click()}
                   className="w-full border-2 border-dashed border-white/10 rounded-xl py-4 text-white/25 hover:border-white/25 hover:text-white/50 transition-colors flex items-center justify-center gap-2"
                 >
@@ -478,6 +491,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
                 ref={videoFileRef}
                 type="file"
                 accept="video/*"
+                aria-label="Upload video file"
                 className="hidden"
                 onChange={e => { setUploadFile(e.target.files?.[0] || null); e.target.value = '' }}
               />
@@ -508,6 +522,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
 
               <div className="flex gap-2 pt-1">
                 <button
+                  type="button"
                   onClick={cancelUpload}
                   disabled={isUploading}
                   className="flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-white/40 bg-white/5 hover:bg-white/10 disabled:opacity-40 transition-colors"
@@ -515,6 +530,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
                   Cancel
                 </button>
                 <button
+                  type="button"
                   onClick={handleVideoUpload}
                   disabled={!uploadTitle.trim() || !uploadFile || isUploading}
                   className="flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-white bg-[#00436b] hover:bg-[#005a8f] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
@@ -528,12 +544,14 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
               <div className="flex gap-2">
                 <input
                   type="url"
+                  aria-label="YouTube video URL"
                   value={section.video_url || ''}
                   onChange={e => onUpdate('video_url', e.target.value)}
                   placeholder="https://www.youtube.com/watch?v=..."
                   className={`${inputClass} flex-1`}
                 />
                 <button
+                  type="button"
                   onClick={() => setShowUploader(true)}
                   title="Upload video to YouTube"
                   className="flex items-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/40 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors whitespace-nowrap shrink-0"
@@ -548,6 +566,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
                     className="absolute inset-0 w-full h-full"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
+                    sandbox="allow-scripts allow-popups allow-forms allow-presentation"
                     title="Video preview"
                   />
                 </div>

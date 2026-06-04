@@ -39,6 +39,10 @@ export default function AdminLayout() {
   )
 }
 
+async function signOut() {
+  await supabase.auth.signOut()
+}
+
 function AdminNav({ email }) {
   const [unreadCount,       setUnreadCount]       = useState(0)
   const [showChangePassword, setShowChangePassword] = useState(false)
@@ -60,10 +64,6 @@ function AdminNav({ email }) {
 
     return () => { supabase.removeChannel(channel) }
   }, [])
-
-  async function signOut() {
-    await supabase.auth.signOut()
-  }
 
   return (
     <>
@@ -109,6 +109,7 @@ function AdminNav({ email }) {
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-white/30 text-xs hidden lg:block truncate max-w-[160px]">{email}</span>
             <button
+              type="button"
               onClick={() => setShowChangePassword(true)}
               title="Change password"
               className="flex items-center gap-1.5 text-white/40 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest p-2"
@@ -116,6 +117,7 @@ function AdminNav({ email }) {
               <KeyRound size={13} />
             </button>
             <button
+              type="button"
               onClick={signOut}
               className="flex items-center gap-1.5 text-white/40 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest"
             >
@@ -213,13 +215,13 @@ function ChangePasswordModal({ onClose }) {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={onClose} onKeyDown={e => { if (e.key === 'Escape') onClose() }} />
       <div className="fixed z-50 inset-x-4 top-1/2 -translate-y-1/2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[380px] bg-[#111827] border border-white/10 rounded-2xl p-6">
         {done ? (
           <div className="text-center py-4">
             <p className="text-white font-bold mb-2">Password updated</p>
             <p className="text-white/50 text-sm mb-6">Your password has been changed successfully.</p>
-            <button onClick={onClose}
+            <button type="button" onClick={onClose}
               className="text-white/40 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors">
               Close
             </button>

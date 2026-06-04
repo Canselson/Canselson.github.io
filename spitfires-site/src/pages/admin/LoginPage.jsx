@@ -107,7 +107,7 @@ function ForgotForm({ onBack }) {
       {sent ? (
         <div className="text-center py-4">
           <p className="text-white/70 text-sm mb-6">Check your inbox for a password reset link.</p>
-          <button onClick={onBack}
+          <button type="button" onClick={onBack}
             className="text-white/40 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors">
             Back to Login
           </button>

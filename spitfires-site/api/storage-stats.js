@@ -34,11 +34,11 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to fetch storage stats' })
   }
 
+  const listResults = await Promise.all(
+    (albums || []).map(album => supabase.storage.from('media').list(album.id, { limit: 10000 }))
+  )
   let usedBytes = 0
-  for (const album of albums || []) {
-    const { data: files } = await supabase.storage
-      .from('media')
-      .list(album.id, { limit: 10000 })
+  for (const { data: files } of listResults) {
     for (const file of files || []) {
       usedBytes += file.metadata?.size ?? 0
     }
