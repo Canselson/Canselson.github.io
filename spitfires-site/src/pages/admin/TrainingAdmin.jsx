@@ -566,7 +566,7 @@ function SectionCard({ section, index, total, onUpdate, onMove, onRemove, onImag
                     className="absolute inset-0 w-full h-full"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
-                    sandbox="allow-scripts allow-popups allow-forms allow-presentation"
+                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
                     title="Video preview"
                   />
                 </div>

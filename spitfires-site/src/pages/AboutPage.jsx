@@ -63,7 +63,7 @@ export default function AboutPage() {
             title="Southampton Spitfires Club Trailer"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
-            sandbox="allow-scripts allow-popups allow-forms allow-presentation"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
             className="w-full h-full"
           />
         </div>
