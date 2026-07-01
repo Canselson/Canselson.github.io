@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { Resend } from 'resend'
 
 // In-memory rate limit: IP → { count, resetAt }
 // Resets per warm serverless instance; prevents rapid repeat submissions
@@ -44,6 +45,22 @@ export default async function handler(req, res) {
   })
 
   if (error) return res.status(500).json({ error: 'Failed to send message — please try again.' })
+
+  const resend = new Resend(process.env.RESEND_API_KEY)
+  await resend.emails.send({
+    from: 'Southampton Spitfires <noreply@southamptonspitfires.me>',
+    to: 'suiihc@soton.ac.uk',
+    subject: `New contact form submission from ${name.trim()}`,
+    text: [
+      `Name: ${name.trim()}`,
+      `Mobile: ${mobile.trim()}`,
+      `Skill level: ${skill_level || 'Not specified'}`,
+      `University: ${university?.trim() || 'Not specified'}`,
+      ``,
+      `Message:`,
+      message.trim(),
+    ].join('\n'),
+  })
 
   return res.status(200).json({ ok: true })
 }
