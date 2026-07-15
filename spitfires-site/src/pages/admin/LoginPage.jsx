@@ -94,7 +94,7 @@ function ForgotForm({ onBack }) {
     setLoading(true)
     setError(null)
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://southamptonspitfires.me/admin/login',
+      redirectTo: 'https://www.southamptonspitfires.com/admin/login',
     })
     if (error) { setError(error.message); setLoading(false) }
     else setSent(true)

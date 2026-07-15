@@ -47,7 +47,7 @@ export default function FixturesPage() {
   const eventsSchema = upcoming.map(game => {
     const teamName  = TEAMS.find(t => t.slug === game.team)?.name ?? ''
     const spitName  = `Southampton Spitfires${teamName ? ` ${teamName}` : ''}`
-    const spitOrg   = { '@type': 'SportsOrganization', name: spitName, url: `https://southamptonspitfires.me/teams/${game.team}` }
+    const spitOrg   = { '@type': 'SportsOrganization', name: spitName, url: `https://www.southamptonspitfires.com/teams/${game.team}` }
     const oppOrg    = { '@type': 'SportsOrganization', name: game.opponent }
     const isHome    = game.home_away === 'home'
     return {
@@ -58,8 +58,8 @@ export default function FixturesPage() {
       eventStatus:   'https://schema.org/EventScheduled',
       homeTeam:      isHome ? spitOrg : oppOrg,
       awayTeam:      isHome ? oppOrg  : spitOrg,
-      organizer:     { '@type': 'SportsOrganization', name: 'Southampton Spitfires', url: 'https://southamptonspitfires.me' },
-      url:           'https://southamptonspitfires.me/fixtures',
+      organizer:     { '@type': 'SportsOrganization', name: 'Southampton Spitfires', url: 'https://www.southamptonspitfires.com' },
+      url:           'https://www.southamptonspitfires.com/fixtures',
       ...(game.location ? { location: { '@type': 'Place', name: game.location } } : {}),
     }
   })

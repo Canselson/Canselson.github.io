@@ -53,7 +53,7 @@ function buildICS(events) {
 
     lines.push(
       'BEGIN:VEVENT',
-      `UID:${ev.id}@southamptonspitfires.me`,
+      `UID:${ev.id}@southamptonspitfires.com`,
       `DTSTAMP:${toICSDate(new Date())}`,
       `DTSTART:${toICSDate(start)}`,
       `DTEND:${toICSDate(end)}`,

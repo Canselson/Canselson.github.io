@@ -48,7 +48,7 @@ export default async function handler(req, res) {
 
   const resend = new Resend(process.env.RESEND_API_KEY)
   await resend.emails.send({
-    from: 'Southampton Spitfires <noreply@southamptonspitfires.me>',
+    from: 'Southampton Spitfires <noreply@southamptonspitfires.com>',
     to: 'suiihc@soton.ac.uk',
     subject: `New contact form submission from ${name.trim()}`,
     text: [

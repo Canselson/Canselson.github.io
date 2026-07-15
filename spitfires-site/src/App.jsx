@@ -179,8 +179,8 @@ const orgSchema = {
   '@type': 'SportsOrganization',
   name: 'Southampton Spitfires',
   sport: 'Ice Hockey',
-  url: 'https://southamptonspitfires.me',
-  logo: 'https://southamptonspitfires.me/logo.png',
+  url: 'https://www.southamptonspitfires.com',
+  logo: 'https://www.southamptonspitfires.com/logo.png',
   sameAs: [
     'https://www.instagram.com/southamptonspitfires/',
     'https://www.youtube.com/@southamptonspitfires',
