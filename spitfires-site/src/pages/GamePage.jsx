@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import PageMeta from '../components/PageMeta'
-import { PLAYERS } from '../data/players'
+import { supabase } from '../lib/supabase'
 import { flagUrl } from '../data/countryFlags'
 
 const STAT_FIELDS = [
-  { key: 'gamesPlayed', label: 'Games' },
-  { key: 'goals',       label: 'Goals' },
-  { key: 'assists',     label: 'Assists' },
-  { key: 'pims',        label: 'PIMs' },
-  { key: 'yearsInClub', label: 'Years' },
+  { key: 'games_played',  label: 'Games' },
+  { key: 'goals',         label: 'Goals' },
+  { key: 'assists',       label: 'Assists' },
+  { key: 'pims',          label: 'PIMs' },
+  { key: 'years_in_club', label: 'Years' },
 ]
 
 function todayKey() {
@@ -57,8 +57,22 @@ function compareNumber(guessValue, answerValue) {
 }
 
 export default function GamePage() {
+  const [players, setPlayers] = useState(null)
+
+  useEffect(() => {
+    supabase
+      .from('game_players')
+      .select('*')
+      .order('name')
+      .then(({ data }) => setPlayers(data || []))
+  }, [])
+
   const dayKey = todayKey()
-  const answer = useMemo(() => PLAYERS[dailyPlayerIndex(PLAYERS.length)], [dayKey])
+  const answer = useMemo(() => {
+    if (!players || players.length === 0) return null
+    return players[dailyPlayerIndex(players.length)]
+  }, [players, dayKey])
+
   const storageKey = `spitfires-guesser-${dayKey}`
 
   const [guesses, setGuesses] = useState(() => {
@@ -76,10 +90,18 @@ export default function GamePage() {
     localStorage.setItem(storageKey, JSON.stringify(guesses))
   }, [guesses, storageKey])
 
+  if (players === null || answer === null) {
+    return (
+      <div className="pt-24 pb-24 max-w-2xl mx-auto px-4 flex justify-center">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-white/70 rounded-full animate-spin" />
+      </div>
+    )
+  }
+
   const won = guesses.some(g => g.name === answer.name)
   const guessedNames = new Set(guesses.map(g => g.name))
   const options = query.trim()
-    ? PLAYERS
+    ? players
         .filter(p => p.name.toLowerCase().includes(query.trim().toLowerCase()) && !guessedNames.has(p.name))
         .slice(0, 8)
     : []
@@ -141,11 +163,20 @@ export default function GamePage() {
         )}
 
         {won && (
-          <div className="mb-8 bg-[#641e31]/20 border border-[#641e31]/40 rounded-lg px-5 py-4">
-            <p className="text-white font-black uppercase tracking-wide text-sm">
-              You got it in {guesses.length} guess{guesses.length === 1 ? '' : 'es'}! It was {answer.name}.
-            </p>
-            <p className="text-white/40 text-xs mt-1">Come back tomorrow for the next Spitfire.</p>
+          <div className="mb-8 bg-[#641e31]/20 border border-[#641e31]/40 rounded-lg px-5 py-4 flex items-center gap-4">
+            {answer.photo_url && (
+              <img
+                src={answer.photo_url}
+                alt={answer.name}
+                className="h-16 w-16 rounded-full object-cover border border-white/10 shrink-0"
+              />
+            )}
+            <div>
+              <p className="text-white font-black uppercase tracking-wide text-sm">
+                You got it in {guesses.length} guess{guesses.length === 1 ? '' : 'es'}! It was {answer.name}.
+              </p>
+              <p className="text-white/40 text-xs mt-1">Come back tomorrow for the next Spitfire.</p>
+            </div>
           </div>
         )}
 
