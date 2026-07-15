@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import PageMeta from '../components/PageMeta'
 import { PLAYERS } from '../data/players'
+import { flagUrl } from '../data/countryFlags'
 
 const STAT_FIELDS = [
   { key: 'gamesPlayed', label: 'Games' },
@@ -173,7 +174,12 @@ export default function GamePage() {
                       )
                     })}
                     <td className={`py-3 pl-3 font-bold ${g.country === answer.country ? 'text-green-400' : 'text-red-400'}`}>
-                      {g.country === answer.country ? '✓' : '✕'}
+                      <span className="inline-flex items-center gap-1.5">
+                        {flagUrl(g.country) && (
+                          <img src={flagUrl(g.country)} alt={g.country} className="h-3.5 w-auto rounded-[2px]" />
+                        )}
+                        {g.country === answer.country ? '✓' : '✕'}
+                      </span>
                     </td>
                   </tr>
                 ))}
