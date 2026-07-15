@@ -21,6 +21,7 @@ import StatsAdmin from './pages/admin/StatsAdmin'
 import TrainingAdmin from './pages/admin/TrainingAdmin'
 import TrainingPage from './pages/TrainingPage'
 import DocumentsPage from './pages/DocumentsPage'
+import GamePage from './pages/GamePage'
 import { Helmet } from 'react-helmet-async'
 import PageMeta from './components/PageMeta'
 import './App.css'
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/documents"             element={<DocumentsPage />} />
           <Route path="/training/:eventId"   element={<TrainingPage />} />
           <Route path="/teams/:teamSlug"     element={<TeamPage />} />
+          <Route path="/game"                element={<GamePage />} />
         </Route>
 
         {/* Admin routes */}
