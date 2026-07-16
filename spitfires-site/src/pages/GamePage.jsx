@@ -60,13 +60,18 @@ function seededShuffle(length, seed) {
   return order
 }
 
+// Salt for the shuffle seed. Bump this to reshuffle which player lands on
+// which day (e.g. to move a photo-less player off today) without breaking
+// the no-repeat-until-full-cycle guarantee.
+const SHUFFLE_SALT = 1
+
 // Cycles through every player once (in a shuffled, seeded-per-cycle order)
 // before any player repeats as the daily answer.
 function dailyPlayerIndex(length) {
   const day = dayNumber()
   const cycle = Math.floor(day / length)
   const position = day % length
-  return seededShuffle(length, cycle)[position]
+  return seededShuffle(length, cycle + SHUFFLE_SALT)[position]
 }
 
 function compareNumber(guessValue, answerValue) {
