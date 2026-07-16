@@ -26,6 +26,10 @@ export const COUNTRY_CODES = {
   India:              'in',
   Nigeria:            'ng',
   'South Africa':     'za',
+  Latvia:             'lv',
+  Russia:             'ru',
+  Turkey:             'tr',
+  Ukraine:            'ua'
 }
 
 export function flagUrl(country) {
