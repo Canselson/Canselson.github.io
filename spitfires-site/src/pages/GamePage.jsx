@@ -237,18 +237,20 @@ export default function GamePage() {
             Spitfiredle
           </h1>
           <p className="text-white/40 mt-3 text-sm leading-relaxed">
-            One player a day. Guess based on games played, goals, assists, PIMs, years in the club, and country.
+            One player a day. Guess based on games played, goals, assists, PIMs, years in BUIHA, and country.
           </p>
         </div>
 
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="relative h-40 w-40 rounded-full overflow-hidden border border-white/10 bg-white/5">
+          <div className="relative w-[148px] h-[185px] border border-white/10 bg-white/5">
             {answer.photo_url ? (
               <img
                 src={answer.photo_url}
                 alt={won ? answer.name : 'Mystery Spitfire'}
-                style={{ filter: `blur(${blurPx}px)`, transform: 'scale(1.15)' }}
-                className="h-full w-full object-cover transition-[filter] duration-500"
+                style={{ filter: `blur(${blurPx}px)`, WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
+                className="h-full w-full object-cover transition-[filter] duration-500 select-none"
+                draggable={false}
+                onContextMenu={e => e.preventDefault()}
               />
             ) : (
               <div className="h-full w-full flex items-center justify-center text-white/20 text-4xl font-black">?</div>
