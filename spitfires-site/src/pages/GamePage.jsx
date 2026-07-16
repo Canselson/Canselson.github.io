@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import PageMeta from '../components/PageMeta'
 import { supabase } from '../lib/supabase'
@@ -112,8 +112,13 @@ export default function GamePage() {
   const [displayName, setDisplayNameState] = useState(() => getDisplayName())
   const [nameInput, setNameInput] = useState('')
   const [myStats, setMyStats] = useState(null)
+  const [myParticipantId, setMyParticipantId] = useState(null)
   const [leaderboard, setLeaderboard] = useState([])
   const [submitted, setSubmitted] = useState(false)
+
+  const leaderboardRef = useRef(null)
+  const rowRefs = useRef({})
+  const hasCenteredRef = useRef(false)
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(guesses))
@@ -122,7 +127,7 @@ export default function GamePage() {
   async function loadLeaderboard() {
     const { data } = await supabase
       .from('game_results')
-      .select('guesses, game_participants(display_name, current_streak)')
+      .select('participant_id, guesses, game_participants(display_name, current_streak)')
       .eq('play_date', todayISO())
       .order('guesses', { ascending: true })
     setLeaderboard(data || [])
@@ -131,6 +136,18 @@ export default function GamePage() {
   useEffect(() => {
     loadLeaderboard()
   }, [dayKey])
+
+  // Centers the leaderboard scroll position on the current player's row,
+  // once, the first time both are available — later leaderboard refreshes
+  // don't yank the scroll position away from wherever the user left it.
+  useLayoutEffect(() => {
+    if (hasCenteredRef.current || !myParticipantId) return
+    const container = leaderboardRef.current
+    const row = rowRefs.current[myParticipantId]
+    if (!container || !row) return
+    container.scrollTop = Math.max(0, row.offsetTop - container.clientHeight / 2 + row.clientHeight / 2)
+    hasCenteredRef.current = true
+  }, [leaderboard, myParticipantId])
 
   const won = guesses.some(g => g.name === answer?.name)
 
@@ -183,6 +200,7 @@ export default function GamePage() {
 
       const avg = myResults.reduce((sum, r) => sum + r.guesses, 0) / myResults.length
       setMyStats({ avg, streak })
+      setMyParticipantId(participant.id)
       loadLeaderboard()
     } catch (err) {
       console.error('Failed to submit leaderboard result', err)
@@ -333,19 +351,26 @@ export default function GamePage() {
             <h2 className="text-white/40 text-xs font-black uppercase tracking-widest mb-3">
               Today's Leaderboard
             </h2>
-            <div className="space-y-1.5">
-              {leaderboard.map((row, i) => (
-                <div key={i} className="flex items-center justify-between bg-white/5 rounded-lg px-4 py-2">
-                  <span className="text-white/70 text-sm">
-                    <span className="text-white/30 font-mono mr-2">{i + 1}.</span>
-                    {row.game_participants?.display_name}
-                  </span>
-                  <span className="flex items-center gap-3 text-white/50 font-mono text-xs">
-                    <span>{row.guesses} guess{row.guesses === 1 ? '' : 'es'}</span>
-                    {row.game_participants?.current_streak > 0 && <span>🔥 {row.game_participants.current_streak}</span>}
-                  </span>
-                </div>
-              ))}
+            <div ref={leaderboardRef} className="max-h-[228px] overflow-y-auto space-y-1.5 pr-1">
+              {leaderboard.map((row, i) => {
+                const isMe = row.participant_id === myParticipantId
+                return (
+                  <div
+                    key={row.participant_id}
+                    ref={el => { rowRefs.current[row.participant_id] = el }}
+                    className={`flex items-center justify-between rounded-lg px-4 py-2 ${isMe ? 'bg-[#641e31]/20 border border-[#641e31]/40' : 'bg-white/5'}`}
+                  >
+                    <span className="text-white/70 text-sm">
+                      <span className="text-white/30 font-mono mr-2">{i + 1}.</span>
+                      {row.game_participants?.display_name}
+                    </span>
+                    <span className="flex items-center gap-3 text-white/50 font-mono text-xs">
+                      <span>{row.guesses} guess{row.guesses === 1 ? '' : 'es'}</span>
+                      {row.game_participants?.current_streak > 0 && <span>🔥 {row.game_participants.current_streak}</span>}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
