@@ -13,7 +13,35 @@ const STAT_FIELDS = [
   { key: 'years_in_club', label: 'Years' },
 ]
 
-const MAX_BLUR_PX = 20
+const PHOTO_WIDTH = 148
+const PHOTO_HEIGHT = 185
+const PHOTO_TOTAL_PIXELS = PHOTO_WIDTH * PHOTO_HEIGHT
+
+// Splits a target block count into a width x height grid matching the
+// photo's aspect ratio, so blocks stay roughly square instead of one
+// giant horizontal or vertical stripe.
+function pixelBlockDims(blockCount) {
+  const aspect = PHOTO_WIDTH / PHOTO_HEIGHT
+  const w = Math.min(PHOTO_WIDTH, Math.max(1, Math.round(Math.sqrt(blockCount * aspect))))
+  const h = Math.min(PHOTO_HEIGHT, Math.max(1, Math.round(blockCount / w)))
+  return { w, h }
+}
+
+// Downscales the image to a tiny w x h grid (averaging each block's
+// color) then scales it back up with smoothing disabled, so each
+// source block renders as a single hard-edged square.
+function drawPixelated(canvas, image, blockCount) {
+  const { w, h } = pixelBlockDims(blockCount)
+  const off = document.createElement('canvas')
+  off.width = w
+  off.height = h
+  off.getContext('2d').drawImage(image, 0, 0, w, h)
+
+  const ctx = canvas.getContext('2d')
+  ctx.imageSmoothingEnabled = false
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  ctx.drawImage(off, 0, 0, w, h, 0, 0, canvas.width, canvas.height)
+}
 
 function todayKey() {
   const d = new Date()
@@ -119,6 +147,7 @@ export default function GamePage() {
   const leaderboardRef = useRef(null)
   const rowRefs = useRef({})
   const hasCenteredRef = useRef(false)
+  const canvasRef = useRef(null)
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(guesses))
@@ -215,6 +244,22 @@ export default function GamePage() {
     setDisplayNameState(trimmed)
   }
 
+  // Block count doubles with each guess, starting from a single block
+  // (one flat color) and reaching full photo resolution around guess 15.
+  const blockCount = won ? PHOTO_TOTAL_PIXELS : Math.min(2 ** guesses.length, PHOTO_TOTAL_PIXELS)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !answer?.photo_url) return
+    let cancelled = false
+    const img = new Image()
+    img.onload = () => {
+      if (!cancelled) drawPixelated(canvas, img, blockCount)
+    }
+    img.src = answer.photo_url
+    return () => { cancelled = true }
+  }, [answer?.photo_url, blockCount])
+
   if (players === null || answer === null) {
     return (
       <div className="pt-24 pb-24 max-w-2xl mx-auto px-4 flex justify-center">
@@ -230,8 +275,7 @@ export default function GamePage() {
         .slice(0, 8)
     : []
 
-  const blurPercent = won ? 0 : Math.max(0, 100 - guesses.length * 5)
-  const blurPx = (blurPercent / 100) * MAX_BLUR_PX
+  const pixelatedPercent = Math.max(0, 100 - Math.round((blockCount / PHOTO_TOTAL_PIXELS) * 100))
 
   function submitGuess(player) {
     if (won || guessedNames.has(player.name)) return
@@ -262,13 +306,16 @@ export default function GamePage() {
         <div className="mb-8 flex flex-col items-center gap-3">
           <div className="relative w-[148px] h-[185px] border border-white/10 bg-white/5">
             {answer.photo_url ? (
-              <img
-                src={answer.photo_url}
-                alt={won ? answer.name : 'Mystery Spitfire'}
-                style={{ filter: `blur(${blurPx}px)`, WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
-                className="h-full w-full object-cover transition-[filter] duration-500 select-none"
-                draggable={false}
+              <canvas
+                ref={canvasRef}
+                width={PHOTO_WIDTH}
+                height={PHOTO_HEIGHT}
+                role="img"
+                aria-label={won ? answer.name : 'Mystery Spitfire'}
+                style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
+                className="h-full w-full select-none"
                 onContextMenu={e => e.preventDefault()}
+                onDragStart={e => e.preventDefault()}
               />
             ) : (
               <div className="h-full w-full flex items-center justify-center text-white/20 text-4xl font-black">?</div>
@@ -277,7 +324,7 @@ export default function GamePage() {
           {won ? (
             <p className="text-white font-black uppercase tracking-wide text-lg">{answer.name}</p>
           ) : (
-            <p className="text-white/30 text-xs uppercase tracking-widest">{blurPercent}% blurred</p>
+            <p className="text-white/30 text-xs uppercase tracking-widest">{pixelatedPercent}% pixelated</p>
           )}
         </div>
 
