@@ -384,7 +384,7 @@ export default function GamePage() {
         {won && (
           <div className="mb-8 bg-[#641e31]/20 border border-[#641e31]/40 rounded-lg px-5 py-4">
             <p className="text-white font-black uppercase tracking-wide text-sm">
-              You got it in {guesses.length} guess{guesses.length === 1 ? '' : 'es'}{timeTaken != null ? ` · ${formatTime(timeTaken)}` : ''}!
+              You got it in {guesses.length} guess{guesses.length === 1 ? '' : 'es'}{timeTaken != null ? <span className="normal-case"> · {formatTime(timeTaken)}</span> : ''}!
             </p>
 
             {!displayName && (
