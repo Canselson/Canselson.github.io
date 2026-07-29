@@ -107,6 +107,13 @@ function compareNumber(guessValue, answerValue) {
   return guessValue < answerValue ? 'higher' : 'lower'
 }
 
+function formatTime(seconds) {
+  if (seconds == null) return '—'
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return m > 0 ? `${m}:${String(s).padStart(2, '0')}` : `${s}s`
+}
+
 export default function GamePage() {
   const [players, setPlayers] = useState(null)
 
@@ -125,6 +132,8 @@ export default function GamePage() {
   }, [players, dayKey])
 
   const storageKey = `spitfires-guesser-${dayKey}`
+  const startKey   = `spitfires-guesser-start-${dayKey}`
+  const timeKey    = `spitfires-guesser-time-${dayKey}`
 
   const [guesses, setGuesses] = useState(() => {
     try {
@@ -133,6 +142,11 @@ export default function GamePage() {
     } catch {
       return []
     }
+  })
+
+  const [timeTaken, setTimeTaken] = useState(() => {
+    const saved = localStorage.getItem(timeKey)
+    return saved !== null ? Number(saved) : null
   })
   const [query, setQuery] = useState('')
   const [showOptions, setShowOptions] = useState(false)
@@ -156,9 +170,10 @@ export default function GamePage() {
   async function loadLeaderboard() {
     const { data } = await supabase
       .from('game_results')
-      .select('participant_id, guesses, game_participants(display_name, current_streak)')
+      .select('participant_id, guesses, time_taken, game_participants(display_name, current_streak)')
       .eq('play_date', todayISO())
       .order('guesses', { ascending: true })
+      .order('time_taken', { ascending: true, nullsFirst: false })
     setLeaderboard(data || [])
   }
 
@@ -182,11 +197,11 @@ export default function GamePage() {
 
   useEffect(() => {
     if (!won || !displayName || submitted) return
-    submitResult(displayName)
+    submitResult(displayName, timeTaken)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [won, displayName, submitted])
+  }, [won, displayName, submitted, timeTaken])
 
-  async function submitResult(name) {
+  async function submitResult(name, time) {
     setSubmitted(true)
     try {
       const deviceId = getDeviceId()
@@ -218,7 +233,7 @@ export default function GamePage() {
       await supabase
         .from('game_results')
         .upsert(
-          { participant_id: participant.id, play_date: playDate, guesses: guesses.length },
+          { participant_id: participant.id, play_date: playDate, guesses: guesses.length, time_taken: time ?? null },
           { onConflict: 'participant_id,play_date' }
         )
 
@@ -279,6 +294,14 @@ export default function GamePage() {
 
   function submitGuess(player) {
     if (won || guessedNames.has(player.name)) return
+    const now = Date.now()
+    if (guesses.length === 0) localStorage.setItem(startKey, String(now))
+    if (player.name === answer.name) {
+      const startedAt = Number(localStorage.getItem(startKey)) || now
+      const t = Math.round((now - startedAt) / 1000)
+      setTimeTaken(t)
+      localStorage.setItem(timeKey, String(t))
+    }
     setGuesses(g => [player, ...g])
     setQuery('')
     setShowOptions(false)
@@ -361,7 +384,7 @@ export default function GamePage() {
         {won && (
           <div className="mb-8 bg-[#641e31]/20 border border-[#641e31]/40 rounded-lg px-5 py-4">
             <p className="text-white font-black uppercase tracking-wide text-sm">
-              You got it in {guesses.length} guess{guesses.length === 1 ? '' : 'es'}!
+              You got it in {guesses.length} guess{guesses.length === 1 ? '' : 'es'}{timeTaken != null ? ` · ${formatTime(timeTaken)}` : ''}!
             </p>
 
             {!displayName && (
@@ -393,7 +416,7 @@ export default function GamePage() {
           </div>
         )}
 
-        {leaderboard.length > 0 && (
+        {won && leaderboard.length > 0 && (
           <div className="mb-8">
             <h2 className="text-white/40 text-xs font-black uppercase tracking-widest mb-3">
               Today's Leaderboard
@@ -413,6 +436,7 @@ export default function GamePage() {
                     </span>
                     <span className="flex items-center gap-3 text-white/50 font-mono text-xs">
                       <span>{row.guesses} guess{row.guesses === 1 ? '' : 'es'}</span>
+                      {row.time_taken != null && <span>{formatTime(row.time_taken)}</span>}
                       {row.game_participants?.current_streak > 0 && <span>🔥 {row.game_participants.current_streak}</span>}
                     </span>
                   </div>
