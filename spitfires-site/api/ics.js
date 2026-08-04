@@ -65,7 +65,28 @@ function buildICS(events) {
   }
 
   lines.push('END:VCALENDAR')
-  return lines.join('\r\n')
+  return lines.map(foldICSLine).join('\r\n')
+}
+
+// RFC 5545 requires content lines to be folded at 75 octets, with
+// continuation lines starting with a single space — without this, long
+// DESCRIPTION lines get truncated or dropped by stricter calendar apps
+// (notably Outlook).
+function foldICSLine(line) {
+  const bytes = Buffer.from(line, 'utf8')
+  if (bytes.length <= 75) return line
+
+  const chunks = []
+  let start = 0
+  let limit = 75
+  while (start < bytes.length) {
+    let end = Math.min(start + limit, bytes.length)
+    while (end < bytes.length && (bytes[end] & 0xc0) === 0x80) end--
+    chunks.push(bytes.slice(start, end).toString('utf8'))
+    start = end
+    limit = 74
+  }
+  return chunks.join('\r\n ')
 }
 
 function toICSDate(date) {

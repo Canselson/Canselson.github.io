@@ -316,7 +316,7 @@ function EventCard({ event }) {
           )}
         </div>
         {event.description && (
-          <p className="text-white/30 text-xs mt-2 line-clamp-2">{event.description}</p>
+          <p className="text-white/30 text-xs mt-2 whitespace-pre-line">{event.description}</p>
         )}
         {event.type === 'training' && (event.training_plans?.id || event.training_plans?.length > 0) && (
           <Link
