@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Plus, Trash2, ChevronUp, ChevronDown, Upload, X, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
+import { logAudit } from '../../lib/auditLog'
 
 const BUCKET       = 'training'
 const MAX_PX       = 1920
@@ -140,7 +141,8 @@ export default function TrainingAdmin() {
     }
 
     // Delete removed sections
-    if (removedIds.length > 0) {
+    const removedCount = removedIds.length
+    if (removedCount > 0) {
       await supabase.from('training_sections').delete().in('id', removedIds)
       setRemovedIds([])
     }
@@ -182,6 +184,20 @@ export default function TrainingAdmin() {
     setSaving(false)
     setSavedMsg(true)
     setTimeout(() => setSavedMsg(false), 2500)
+
+    const changeParts = [
+      newSecs.length  > 0 && `${newSecs.length} added`,
+      existing.length > 0 && `${existing.length} updated`,
+      removedCount    > 0 && `${removedCount} removed`,
+    ].filter(Boolean)
+    if (changeParts.length > 0) {
+      logAudit({
+        action:     'update',
+        entityType: 'training_plan',
+        entityId:   pid,
+        summary:    `Updated training plan: ${event.title || 'Training Session'} (${changeParts.join(', ')})`,
+      })
+    }
   }
 
   if (loading) return <div className="text-white/40 text-sm animate-pulse">Loading…</div>

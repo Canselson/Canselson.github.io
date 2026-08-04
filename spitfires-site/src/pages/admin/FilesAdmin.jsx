@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
+import { logAudit } from '../../lib/auditLog'
 import { Plus, Upload, Download, Trash2, ChevronDown, ChevronUp, Pencil, FileText } from 'lucide-react'
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -73,6 +74,12 @@ export default function FilesAdmin() {
   async function applyVisibility(doc, isPublic) {
     await supabase.from('club_documents').update({ is_public: isPublic }).eq('id', doc.id)
     setDocuments(d => d.map(x => x.id === doc.id ? { ...x, is_public: isPublic } : x))
+    logAudit({
+      action:     'update',
+      entityType: 'document',
+      entityId:   doc.id,
+      summary:    `Made document ${isPublic ? 'public' : 'private'}: ${doc.title}`,
+    })
     setVisibilityConfirm(null)
   }
 
@@ -126,6 +133,13 @@ export default function FilesAdmin() {
       return
     }
 
+    logAudit({
+      action:     'create',
+      entityType: 'document_version',
+      entityId:   docId,
+      summary:    `Uploaded version v${nextVersion} (${file.name}) for document: ${documents.find(d => d.id === docId)?.title ?? docId}`,
+    })
+
     setUploading(false)
     fetchDocuments()
     setExpandedId(docId)
@@ -139,6 +153,12 @@ export default function FilesAdmin() {
       ...v,
       [version.document_id]: v[version.document_id].filter(x => x.id !== version.id),
     }))
+    logAudit({
+      action:     'delete',
+      entityType: 'document_version',
+      entityId:   version.id,
+      summary:    `Deleted version v${version.version_number} (${version.file_name}) from document: ${documents.find(d => d.id === version.document_id)?.title ?? version.document_id}`,
+    })
     fetchDocuments()
     setDeleteConfirm(null)
   }
@@ -152,6 +172,7 @@ export default function FilesAdmin() {
       await supabase.storage.from('documents').remove(versionList.map(v => v.file_path))
     }
     await supabase.from('club_documents').delete().eq('id', doc.id)
+    logAudit({ action: 'delete', entityType: 'document', entityId: doc.id, summary: `Deleted document: ${doc.title}` })
     setDocuments(d => d.filter(x => x.id !== doc.id))
     if (expandedId === doc.id) setExpandedId(null)
     setDeleteConfirm(null)
@@ -368,10 +389,16 @@ function DocModal({ mode, initialDoc, onClose, onSaved }) {
     setLoading(true)
     setError(null)
     const payload = { title: title.trim(), description: description.trim() || null }
-    const { error } = mode === 'add'
-      ? await supabase.from('club_documents').insert(payload)
-      : await supabase.from('club_documents').update(payload).eq('id', initialDoc.id)
+    const { data, error } = mode === 'add'
+      ? await supabase.from('club_documents').insert(payload).select('id').single()
+      : await supabase.from('club_documents').update(payload).eq('id', initialDoc.id).select('id').single()
     if (error) { setError(error.message); setLoading(false); return }
+    logAudit({
+      action:     mode === 'add' ? 'create' : 'update',
+      entityType: 'document',
+      entityId:   mode === 'add' ? data.id : initialDoc.id,
+      summary:    `${mode === 'add' ? 'Created' : 'Updated'} document: ${payload.title}`,
+    })
     onSaved()
   }
 

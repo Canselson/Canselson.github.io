@@ -4,6 +4,7 @@ import { Upload, Save, Sparkles, Trash2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { parseDGS } from '../../lib/parseDGS'
+import { logAudit } from '../../lib/auditLog'
 
 const TEAMS = {
   'a-team': 'A Team',
@@ -125,6 +126,12 @@ export default function ReportAdmin() {
       setReport(data)
       setSaveStatus('saved')
       setTimeout(() => setSaveStatus(null), 3000)
+      logAudit({
+        action:     report ? 'update' : 'create',
+        entityType: 'match_report',
+        entityId:   data.id,
+        summary:    `${report ? 'Updated' : 'Created'} match report: vs ${event.opponent}`,
+      })
     }
     setSaving(false)
   }
@@ -150,6 +157,12 @@ export default function ReportAdmin() {
       setReportText(report_text)
       setSaveStatus('saved')
       setTimeout(() => setSaveStatus(null), 3000)
+      logAudit({
+        action:     report ? 'update' : 'create',
+        entityType: 'match_report',
+        entityId:   data.id,
+        summary:    `${report ? 'Updated' : 'Created'} match report (forfeit): vs ${event.opponent}`,
+      })
     }
     setSaving(false)
   }
@@ -157,6 +170,7 @@ export default function ReportAdmin() {
   async function removeReport() {
     setRemoving(true)
     await supabase.from('match_reports').delete().eq('id', report.id)
+    logAudit({ action: 'delete', entityType: 'match_report', entityId: report.id, summary: `Deleted match report: vs ${event.opponent}` })
     navigate('/admin')
   }
 

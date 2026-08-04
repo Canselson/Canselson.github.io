@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Trash2, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { logAudit } from '../../lib/auditLog'
 
 const SKILL_LABELS = {
   beginner:     'Beginner',
@@ -41,6 +42,7 @@ export default function MessagesAdmin() {
 
   async function handleDelete(msg) {
     await supabase.from('contact_messages').delete().eq('id', msg.id)
+    logAudit({ action: 'delete', entityType: 'message', entityId: msg.id, summary: `Deleted message from ${msg.name}` })
     setMessages(msgs => msgs.filter(m => m.id !== msg.id))
     if (expanded === msg.id) setExpanded(null)
     setDeleteTarget(null)

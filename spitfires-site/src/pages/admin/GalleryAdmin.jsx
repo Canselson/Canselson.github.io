@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2, X, AlertTriangle, Upload, Star, Images } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
+import { logAudit } from '../../lib/auditLog'
 
 const TEAMS = [
   { slug: 'a-team', name: 'A Team'  },
@@ -52,6 +53,13 @@ function AlbumList() {
 
   async function deleteAlbum(album) {
     await supabase.from('media_albums').delete().eq('id', album.id)
+    const count = album.media_photos?.length ?? 0
+    logAudit({
+      action:     'delete',
+      entityType: 'album',
+      entityId:   album.id,
+      summary:    `Deleted album: ${album.title} (${count} photo${count === 1 ? '' : 's'})`,
+    })
     setDeleteTarget(null)
     load()
   }
@@ -220,6 +228,7 @@ function AlbumEditor({ albumId }) {
 
     const base = photos.length
     let firstUrl = null
+    let uploadedCount = 0
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
@@ -241,6 +250,7 @@ function AlbumEditor({ albumId }) {
         url:        publicUrl,
         sort_order: base + i,
       })
+      uploadedCount++
 
       setProgress(p => ({ ...p, done: p.done + 1 }))
     }
@@ -251,6 +261,15 @@ function AlbumEditor({ albumId }) {
       setAlbum(a => ({ ...a, cover_url: firstUrl }))
     }
 
+    if (uploadedCount > 0) {
+      logAudit({
+        action:     'create',
+        entityType: 'photo',
+        entityId:   albumId,
+        summary:    `Uploaded ${uploadedCount} photo${uploadedCount === 1 ? '' : 's'} to album: ${album.title}`,
+      })
+    }
+
     await loadPhotos()
     setUploading(false)
   }
@@ -258,12 +277,14 @@ function AlbumEditor({ albumId }) {
   async function handleSetCover(url) {
     await supabase.from('media_albums').update({ cover_url: url }).eq('id', albumId)
     setAlbum(a => ({ ...a, cover_url: url }))
+    logAudit({ action: 'update', entityType: 'album', entityId: albumId, summary: `Set cover photo for album: ${album.title}` })
   }
 
   async function handleDeletePhoto(photo) {
     const segment = photo.url.split('/storage/v1/object/public/media/')[1]
     if (segment) await supabase.storage.from('media').remove([segment])
     await supabase.from('media_photos').delete().eq('id', photo.id)
+    logAudit({ action: 'delete', entityType: 'photo', entityId: photo.id, summary: `Deleted photo from album: ${album.title}` })
 
     // If this was the cover, auto-pick the next remaining photo
     if (album.cover_url === photo.url) {
@@ -402,10 +423,16 @@ function AlbumFormPanel({ initial, onClose, onSaved }) {
       team:        form.team || null,
       description: form.description.trim() || null,
     }
-    const { error: err } = isNew
-      ? await supabase.from('media_albums').insert(payload)
-      : await supabase.from('media_albums').update(payload).eq('id', initial.id)
+    const { data, error: err } = isNew
+      ? await supabase.from('media_albums').insert(payload).select('id').single()
+      : await supabase.from('media_albums').update(payload).eq('id', initial.id).select('id').single()
     if (err) { setError(err.message); setSaving(false); return }
+    logAudit({
+      action:     isNew ? 'create' : 'update',
+      entityType: 'album',
+      entityId:   isNew ? data.id : initial.id,
+      summary:    `${isNew ? 'Created' : 'Updated'} album: ${payload.title}`,
+    })
     onSaved()
   }
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2, X, AlertTriangle, FileText, Upload, Copy, FileImage, Check, LayoutList } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
+import { logAudit } from '../../lib/auditLog'
 
 const EVENT_TYPES = {
   game:     { label: 'Game',     color: '#00436b' },
@@ -396,10 +397,16 @@ function EventFormPanel({ initial, onClose, onSaved }) {
     setSaving(true)
     setError(null)
     const payload = formToPayload(form)
-    const { error } = isNew
-      ? await supabase.from('events').insert(payload)
-      : await supabase.from('events').update(payload).eq('id', initial.id)
+    const { data, error } = isNew
+      ? await supabase.from('events').insert(payload).select('id').single()
+      : await supabase.from('events').update(payload).eq('id', initial.id).select('id').single()
     if (error) { setError(error.message); setSaving(false); return }
+    logAudit({
+      action:     isNew ? 'create' : 'update',
+      entityType: 'event',
+      entityId:   isNew ? data.id : initial.id,
+      summary:    `${isNew ? 'Created' : 'Updated'} event: ${payload.title}`,
+    })
     onSaved()
   }
 
@@ -657,6 +664,13 @@ function ImportFixturesModal({ onClose, onImported }) {
       description: null,
     }] : [])
     await supabase.from('events').insert(toInsert)
+    if (toInsert.length > 0) {
+      logAudit({
+        action:     'create',
+        entityType: 'event',
+        summary:    `Imported ${toInsert.length} fixture${toInsert.length === 1 ? '' : 's'} for ${TEAMS.find(t => t.slug === team)?.name ?? team}`,
+      })
+    }
     onImported()
   }
 
@@ -862,6 +876,7 @@ function DeleteModal({ event, onCancel, onDeleted }) {
   async function confirm() {
     setDeleting(true)
     await supabase.from('events').delete().eq('id', event.id)
+    logAudit({ action: 'delete', entityType: 'event', entityId: event.id, summary: `Deleted event: ${title}` })
     onDeleted()
   }
 

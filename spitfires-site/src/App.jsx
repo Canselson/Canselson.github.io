@@ -19,6 +19,7 @@ import MessagesAdmin from './pages/admin/MessagesAdmin'
 import FilesAdmin from './pages/admin/FilesAdmin'
 import StatsAdmin from './pages/admin/StatsAdmin'
 import TrainingAdmin from './pages/admin/TrainingAdmin'
+import AuditLogAdmin from './pages/admin/AuditLogAdmin'
 import TrainingPage from './pages/TrainingPage'
 import DocumentsPage from './pages/DocumentsPage'
 import GamePage from './pages/GamePage'
@@ -77,6 +78,7 @@ export default function App() {
           <Route path="files"               element={<FilesAdmin />} />
           <Route path="stats"               element={<StatsAdmin />} />
           <Route path="training/:eventId"   element={<TrainingAdmin />} />
+          <Route path="audit"               element={<AuditLogAdmin />} />
         </Route>
       </Routes>
       </AuthProvider>
