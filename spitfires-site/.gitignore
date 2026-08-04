@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# One-off Supabase migration SQL — run manually, kept locally for reference,
+# not committed (no secrets in these, just schema/RLS, but keep DB setup out
+# of the public repo on principle).
+*.sql
