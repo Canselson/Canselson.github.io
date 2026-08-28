@@ -34,6 +34,7 @@ const teams = [
     name: 'A Team',
     slug: 'a-team',
     img: '/team_photos/A-Team.jpg',
+    imgPosition: 'object-top',
     description: [
       'The Spitfires A-Team are undeniably one of the most successful top-tier university ice hockey teams in Great Britain, racking up an impressive display of silverware from four Tier 1 National Championship titles at the very highest level, along with multiple league titles.',
       'The A-Team play out of the recently refurbished Olympic-sized Basingstoke ice rink and always welcome new talent throughout the season. If you\'re a student, get in touch to become part of the team\'s inevitable success in the club\'s 30th anniversary year.',
@@ -44,6 +45,7 @@ const teams = [
     name: 'B Team',
     slug: 'b-team',
     img: '/team_photos/B-Team.jpg',
+    imgPosition: 'object-center',
     description: [
       "The Spitfires B are Southampton's highest non-checking team, with a proud history spanning almost two decades. Over the years, the B's have picked up multiple league titles and plenty of memorable victories along the way, as well as the occasional spectacular loss!",
       "Most recently, the B's secured bronze at the 2025/26 Non-Check Tier 1 Nationals, capping off another successful season and setting the standard for future seasons.",
@@ -54,6 +56,7 @@ const teams = [
     name: 'C Team',
     slug: 'c-team',
     img: '/team_photos/C-Team.jpg',
+    imgPosition: 'object-center',
     description: [
       'The C-Team brings a range of players to the table, bridging the gap between those more experienced with ice skating and hockey fundamentals and newer players who have joined the club with an excitement to learn and develop. This allows the C-Team to act as a stepping stone between the beginners and the more advanced teams.',
       'Beyond this, the C-Team is full of passion and excitement for the game, and you won\'t have to look far to find up-and-coming Southampton Spitfires home-grown talents in their ranks.',
@@ -64,6 +67,7 @@ const teams = [
     name: 'D Team',
     slug: 'd-team',
     img: '/team_photos/D-Team.jpg',
+    imgPosition: 'object-center',
     description: [
       'The D-team is the grassroots of Southampton Spitfires, acting as a training ground for less experienced players to build the fundamentals before stepping up to the C-team and competing at a slightly faster pace.',
       'We have proven ourselves to be a competitive side over the last season of friendlies, and we are looking to be entered into tier 3 non-checking for the upcoming season.',
@@ -74,6 +78,7 @@ const teams = [
     name: "Women's",
     slug: 'womens',
     img: '/team_photos/Womens.jpg',
+    imgPosition: 'object-center',
     description: [
       "The Spitfires Women's team provides a place for both developing and elite players through two teams: Development and League. The Development team gives players the chance to improve their skills outside of regular D-Team games, while the League team allows more experienced players to engage in competitive hockey against others of the same level.",
       "If you have experience with skating and the basics of hockey, you'll likely be placed in the League team — an exceptional team with an even better atmosphere. You'll be welcomed in and have plenty of opportunity to learn from advanced players. Last year, they made it to the semi-finals of the BUIHA Women's Tier 1 Nationals, and we hope to continue this success in the coming year!",
@@ -590,7 +595,7 @@ function TeamPage() {
         <img
           src={team.img}
           alt={team.name}
-          className="w-full h-full object-cover object-top"
+          className={`w-full h-full object-cover ${team.imgPosition ?? 'object-center'}`}
         />
         <div
           className="absolute inset-0"
