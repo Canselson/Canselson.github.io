@@ -591,7 +591,7 @@ function TeamPage() {
         description={`Southampton Spitfires ${team.name} — fixtures, results, and team information.`}
       />
       {/* Hero banner */}
-      <div className="relative h-[35rem] sm:h-[49rem] overflow-hidden">
+      <div className="relative h-80 sm:h-[49rem] overflow-hidden">
         <img
           src={team.img}
           alt={team.name}
