@@ -618,7 +618,7 @@ function TeamPage() {
             </div>
             <div className="border-t border-white/10 pt-10 flex flex-col items-center gap-4">
               <p className="text-white/50 text-sm">
-                Interested in joining the {team.name}? All skill levels are welcome — no experience necessary.
+                Interested in joining the {team.name}? Let us know!
               </p>
               <Link
                 to="/join"
