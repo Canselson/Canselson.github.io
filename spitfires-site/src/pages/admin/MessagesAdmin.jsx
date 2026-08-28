@@ -161,7 +161,8 @@ function MessageRow({ message, expanded, onToggle, onDelete }) {
         <div className="border-t border-white/10 px-5 py-5">
           <div className="grid sm:grid-cols-2 gap-4 mb-5">
             <Detail label="Name"    value={message.name} />
-            <Detail label="Mobile"  value={message.mobile} />
+            {message.mobile    && <Detail label="Mobile"  value={message.mobile} />}
+            {message.email     && <Detail label="Email"   value={message.email} />}
             <Detail label="Skill Level" value={skill} />
             {message.university && <Detail label="University" value={message.university} />}
           </div>

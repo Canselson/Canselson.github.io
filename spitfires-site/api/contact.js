@@ -25,12 +25,12 @@ export default async function handler(req, res) {
     rateLimits.set(ip, { count: 1, resetAt: now + WINDOW_MS })
   }
 
-  const { name, mobile, skill_level, university, message, _pot } = req.body ?? {}
+  const { name, mobile, email, skill_level, university, message, _pot } = req.body ?? {}
 
   // Honeypot: filled only by bots — silently accept so we don't reveal the check
   if (_pot) return res.status(200).json({ ok: true })
 
-  if (!name?.trim() || !mobile?.trim() || !message?.trim()) {
+  if (!name?.trim() || !message?.trim() || (!mobile?.trim() && !email?.trim())) {
     return res.status(400).json({ error: 'Required fields missing' })
   }
 
@@ -38,7 +38,8 @@ export default async function handler(req, res) {
 
   const { error } = await supabase.from('contact_messages').insert({
     name:        name.trim(),
-    mobile:      mobile.trim(),
+    mobile:      mobile?.trim() || null,
+    email:       email?.trim() || null,
     skill_level: skill_level || null,
     university:  university?.trim() || null,
     message:     message.trim(),
@@ -53,7 +54,8 @@ export default async function handler(req, res) {
     subject: `New contact form submission from ${name.trim()}`,
     text: [
       `Name: ${name.trim()}`,
-      `Mobile: ${mobile.trim()}`,
+      `Mobile: ${mobile?.trim() || 'Not provided'}`,
+      `Email: ${email?.trim() || 'Not provided'}`,
       `Skill level: ${skill_level || 'Not specified'}`,
       `University: ${university?.trim() || 'Not specified'}`,
       ``,

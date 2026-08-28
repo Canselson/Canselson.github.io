@@ -10,7 +10,7 @@ const SKILL_LEVELS = [
 
 export default function JoinPage() {
   const [form, setForm] = useState({
-    name: '', mobile: '', skill_level: '', university: '', message: '', _pot: '',
+    name: '', mobile: '', email: '', skill_level: '', university: '', message: '', _pot: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [submitted,  setSubmitted]  = useState(false)
@@ -24,6 +24,11 @@ export default function JoinPage() {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
+    if (!form.mobile.trim() && !form.email.trim()) {
+      setError('Please provide at least a mobile number or email address.')
+      setSubmitting(false)
+      return
+    }
     try {
       const res = await fetch('/api/contact', {
         method:  'POST',
@@ -95,16 +100,27 @@ export default function JoinPage() {
           />
         </Field>
 
-        <Field label="Mobile Number *">
+        <Field label="Mobile Number">
           <input
             type="tel"
             aria-label="Mobile number"
             value={form.mobile}
             onChange={set('mobile')}
-            required
             placeholder="+44 7xxx xxxxxx"
             className={inputClass}
           />
+        </Field>
+
+        <Field label="Email Address">
+          <input
+            type="email"
+            aria-label="Email address"
+            value={form.email}
+            onChange={set('email')}
+            placeholder="you@example.com"
+            className={inputClass}
+          />
+          <span className="text-white/25 text-xs">At least one of mobile or email is required.</span>
         </Field>
 
         <Field label="Hockey Skill Level">
@@ -169,7 +185,7 @@ export default function JoinPage() {
         </button>
 
         <p className="text-white/20 text-xs text-center">
-          Fields marked * are required. By submitting this form you confirm you are 17 or older and agree to our{' '}
+          Name and message are required. By submitting this form you confirm you are 17 or older and agree to our{' '}
           <a href="/privacy-policy-print.html" target="_blank" rel="noopener noreferrer"
             className="underline hover:text-white/40 transition-colors">
             Privacy Policy
