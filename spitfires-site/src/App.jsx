@@ -590,7 +590,7 @@ function TeamPage() {
         <img
           src={team.img}
           alt={team.name}
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-cover object-top"
         />
         <div
           className="absolute inset-0"
@@ -599,7 +599,7 @@ function TeamPage() {
               'linear-gradient(to bottom, rgba(10,15,26,0.3) 0%, rgba(10,15,26,0.85) 80%, #0a0f1a 100%)',
           }}
         />
-        <div className="absolute bottom-0 left-0 px-8 pb-8 max-w-7xl mx-auto w-full">
+        <div className="absolute bottom-0 inset-x-0 px-8 pb-8 text-center">
           <p className="text-white/50 text-xs uppercase tracking-widest mb-1">Southampton Spitfires</p>
           <h1 className="text-white text-4xl sm:text-5xl font-black uppercase tracking-tight">
             {team.name}
@@ -608,7 +608,7 @@ function TeamPage() {
       </div>
 
       {/* Team content */}
-      <div className="max-w-3xl mx-auto px-8 py-16">
+      <div className="max-w-3xl mx-auto px-8 py-16 text-center">
         {team.description ? (
           <>
             <div className="space-y-5 mb-12">
@@ -616,8 +616,8 @@ function TeamPage() {
                 <p key={i} className="text-white/70 text-base leading-relaxed">{para}</p>
               ))}
             </div>
-            <div className="border-t border-white/10 pt-10">
-              <p className="text-white/50 text-sm mb-4">
+            <div className="border-t border-white/10 pt-10 flex flex-col items-center gap-4">
+              <p className="text-white/50 text-sm">
                 Interested in joining the {team.name}? All skill levels are welcome — no experience necessary.
               </p>
               <Link
@@ -629,7 +629,7 @@ function TeamPage() {
             </div>
           </>
         ) : (
-          <p className="text-white/30 text-sm uppercase tracking-widest text-center">
+          <p className="text-white/30 text-sm uppercase tracking-widest">
             Full team page coming soon — fixtures, results, and roster will appear here.
           </p>
         )}
