@@ -34,7 +34,7 @@ const teams = [
     name: 'A Team',
     slug: 'a-team',
     img: '/team_photos/A-Team.jpg',
-    imgPosition: 'object-top',
+    imgPosition: 'object-center sm:object-top',
     description: [
       'The Spitfires A-Team are undeniably one of the most successful top-tier university ice hockey teams in Great Britain, racking up an impressive display of silverware from four Tier 1 National Championship titles at the very highest level, along with multiple league titles.',
       'The A-Team play out of the recently refurbished Olympic-sized Basingstoke ice rink and always welcome new talent throughout the season. If you\'re a student, get in touch to become part of the team\'s inevitable success in the club\'s 30th anniversary year.',
