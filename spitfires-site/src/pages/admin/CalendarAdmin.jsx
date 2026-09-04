@@ -991,6 +991,11 @@ function validate(form) {
   if (form.type === 'game' && !form.opponent.trim()) return 'Opponent is required for games.'
   if (form.type !== 'game' && !form.title.trim())    return 'Title is required.'
   if (Boolean(form.endDate) !== Boolean(form.endTime)) return 'Provide both an end date and end time, or neither.'
+  if (form.endDate && form.endTime) {
+    const start = new Date(`${form.startDate}T${form.startTime}`)
+    const end   = new Date(`${form.endDate}T${form.endTime}`)
+    if (end <= start) return 'End must be after the start.'
+  }
   return null
 }
 

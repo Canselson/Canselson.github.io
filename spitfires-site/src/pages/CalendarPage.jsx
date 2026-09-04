@@ -70,7 +70,9 @@ export default function CalendarPage() {
       if (!ev.ends_at) return evStartDate.getTime() === cellDate.getTime()
       const evEnd     = new Date(ev.ends_at)
       const evEndDate = new Date(evEnd.getFullYear(), evEnd.getMonth(), evEnd.getDate())
-      if (evStartDate.getTime() === evEndDate.getTime()) return evStartDate.getTime() === cellDate.getTime()
+      // Fall back to single-day for same-day or bad (end-before-start) data,
+      // so a broken end date can never silently hide the event.
+      if (evEndDate.getTime() <= evStartDate.getTime()) return evStartDate.getTime() === cellDate.getTime()
       return cellDate >= evStartDate && cellDate <= evEndDate
     })
   }
