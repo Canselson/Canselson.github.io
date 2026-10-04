@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { Helmet } from 'react-helmet-async'
 import PageMeta from '../components/PageMeta'
+import { opponentLogoSources } from '../lib/opponentLogo'
 
 const TEAMS = [
   { slug: 'a-team',  name: 'A Team'  },
@@ -192,6 +193,9 @@ function FixtureRow({ game, past, report }) {
         </p>
       </div>
 
+      {/* Opponent logo — stays collapsed unless a matching file loads */}
+      <OpponentLogoColumn name={game.opponent} />
+
       {/* Main content */}
       <div className="flex-1 px-5 py-4 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
@@ -257,6 +261,34 @@ function FixtureRow({ game, past, report }) {
   return hasReport
     ? <Link to={`/report/${game.id}`}>{inner}</Link>
     : inner
+}
+
+// ─── Opponent logo ────────────────────────────────────────────────────────────
+
+function OpponentLogoColumn({ name }) {
+  const sources = useMemo(() => opponentLogoSources(name), [name])
+  const [idx,    setIdx]    = useState(0)
+  const [loaded, setLoaded] = useState(false)
+
+  // No candidate names, or every extension 404'd — render nothing (no column).
+  if (sources.length === 0 || idx >= sources.length) return null
+
+  return (
+    <div
+      className={`shrink-0 flex items-center justify-center transition-all ${
+        loaded ? 'w-16 px-3 py-4 border-r border-white/10' : 'w-0 overflow-hidden'
+      }`}
+    >
+      <img
+        src={sources[idx]}
+        alt={`${name} logo`}
+        loading="lazy"
+        onLoad={() => setLoaded(true)}
+        onError={() => { setLoaded(false); setIdx(i => i + 1) }}
+        className="max-h-10 max-w-full object-contain"
+      />
+    </div>
+  )
 }
 
 // ─── States ───────────────────────────────────────────────────────────────────
