@@ -56,7 +56,7 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        model: 'qwen/qwen3.8-27b',
         messages: [
           {
             role: 'user',
@@ -69,8 +69,9 @@ export default async function handler(req, res) {
             ],
           },
         ],
-        temperature: 0.1,
-        max_tokens:  1500,
+        temperature:      0.1,
+        max_tokens:       1500,
+        reasoning_effort: 'none', // skip thinking tokens — we only want the JSON
       }),
     })
 
@@ -82,8 +83,12 @@ export default async function handler(req, res) {
     const json = await groqRes.json()
     const raw  = json.choices?.[0]?.message?.content ?? ''
 
-    // Strip markdown code fences if the model added them anyway
-    const cleaned = raw.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim()
+    // Strip any reasoning block and markdown code fences the model may add anyway
+    const cleaned = raw
+      .replace(/<think>[\s\S]*?<\/think>/gi, '')
+      .replace(/```(?:json)?/gi, '')
+      .replace(/```/g, '')
+      .trim()
 
     let fixtures
     try {
