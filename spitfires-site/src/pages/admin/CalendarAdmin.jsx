@@ -613,6 +613,7 @@ async function resizeImageToBase64(file, maxDim = 1400) {
 }
 
 function ImportFixturesModal({ onClose, onImported }) {
+  const { session } = useAuth()
   const [team,       setTeam]       = useState('a-team')
   const [parsing,    setParsing]    = useState(false)
   const [parseError, setParseError] = useState(null)
