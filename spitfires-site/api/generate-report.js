@@ -72,10 +72,11 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model:       'llama-3.3-70b-versatile',
-        messages:    [{ role: 'user', content: prompt }],
-        temperature: 0.75,
-        max_tokens:  900,
+        model:            'openai/gpt-oss-120b',
+        messages:         [{ role: 'user', content: prompt }],
+        temperature:      0.75,
+        max_tokens:       2000, // reasoning tokens share this budget — leave room for the report
+        reasoning_effort: 'low', // minimal thinking; we only want the report prose
       }),
     })
 
@@ -85,11 +86,12 @@ export default async function handler(req, res) {
     }
 
     const json = await groqRes.json()
-    const text = json.choices?.[0]?.message?.content ?? ''
+    const raw  = json.choices?.[0]?.message?.content ?? ''
+    const text = raw.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
 
     if (!text) return res.status(502).json({ error: 'Empty response from Groq' })
 
-    return res.status(200).json({ text: text.trim() })
+    return res.status(200).json({ text })
   } catch (_) {
     return res.status(500).json({ error: 'Internal server error' })
   }
