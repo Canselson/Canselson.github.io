@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Upload, Save, Sparkles, Trash2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
-import { parseDGS } from '../../lib/parseDGS'
+import { parseDGS, goaliesFor } from '../../lib/parseDGS'
 import { logAudit } from '../../lib/auditLog'
 
 const TEAMS = {
@@ -91,8 +91,8 @@ export default function ReportAdmin() {
           awayScore:    dgsData.awayScore,
           goals:        dgsData.goals,
           penalties:    dgsData.penalties,
-          homeGoalie:   dgsData.homeGoalie,
-          awayGoalie:   dgsData.awayGoalie,
+          homeGoalies:  goaliesFor(dgsData, 'home'),
+          awayGoalies:  goaliesFor(dgsData, 'away'),
           homeRoster:   dgsData.homeRoster,
           awayRoster:   dgsData.awayRoster,
         }),
@@ -366,8 +366,8 @@ export default function ReportAdmin() {
               {tab === 'penalties' && <PenaltiesPreview penalties={dgsData.penalties} />}
               {tab === 'goalies'   && (
                 <GoaliesPreview
-                  homeGoalie={dgsData.homeGoalie}
-                  awayGoalie={dgsData.awayGoalie}
+                  homeGoalies={goaliesFor(dgsData, 'home')}
+                  awayGoalies={goaliesFor(dgsData, 'away')}
                   homeTeam={dgsData.homeTeamName}
                   awayTeam={dgsData.awayTeamName}
                 />
@@ -532,11 +532,15 @@ function PenaltiesPreview({ penalties }) {
 
 // ─── Preview: Goalies ─────────────────────────────────────────────────────────
 
-function GoaliesPreview({ homeGoalie, awayGoalie, homeTeam, awayTeam }) {
+function GoaliesPreview({ homeGoalies, awayGoalies, homeTeam, awayTeam }) {
   return (
     <div className="grid sm:grid-cols-2 gap-4">
-      {homeGoalie && <GoaliePreviewCard goalie={homeGoalie} teamName={homeTeam} label="Home" />}
-      {awayGoalie && <GoaliePreviewCard goalie={awayGoalie} teamName={awayTeam} label="Away" />}
+      {homeGoalies.map((g, i) => (
+        <GoaliePreviewCard key={g.player?.id ?? `home-${i}`} goalie={g} teamName={homeTeam} label="Home" />
+      ))}
+      {awayGoalies.map((g, i) => (
+        <GoaliePreviewCard key={g.player?.id ?? `away-${i}`} goalie={g} teamName={awayTeam} label="Away" />
+      ))}
     </div>
   )
 }

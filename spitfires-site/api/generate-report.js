@@ -34,9 +34,13 @@ export default async function handler(req, res) {
   const {
     eventId,
     homeTeamName, awayTeamName, homeScore, awayScore,
-    goals, penalties, homeGoalie, awayGoalie,
+    goals, penalties,
     homeRoster, awayRoster,
   } = req.body
+
+  // Accept the current array shape, falling back to the old singular field.
+  const homeGoalies = req.body.homeGoalies ?? (req.body.homeGoalie ? [req.body.homeGoalie] : [])
+  const awayGoalies = req.body.awayGoalies ?? (req.body.awayGoalie ? [req.body.awayGoalie] : [])
 
   if (!homeTeamName || homeScore == null || awayScore == null) {
     return res.status(400).json({ error: 'Invalid game data' })
@@ -56,7 +60,7 @@ export default async function handler(req, res) {
 
   const prompt = buildPrompt({
     homeTeamName, awayTeamName, homeScore, awayScore,
-    goals, penalties, homeGoalie, awayGoalie,
+    goals, penalties, homeGoalies, awayGoalies,
     seasonContext,
   })
 
@@ -240,7 +244,7 @@ async function buildSeasonContext(supabase, eventId, { homeTeamName, awayTeamNam
 
 // ─── Prompt builder ───────────────────────────────────────────────────────────
 
-function buildPrompt({ homeTeamName, awayTeamName, homeScore, awayScore, goals = [], penalties = [], homeGoalie, awayGoalie, seasonContext }) {
+function buildPrompt({ homeTeamName, awayTeamName, homeScore, awayScore, goals = [], penalties = [], homeGoalies = [], awayGoalies = [], seasonContext }) {
   const spitfiresHome  = /spitfire/i.test(homeTeamName)
   const spitfiresName  = spitfiresHome ? homeTeamName : awayTeamName
   const opponentName   = spitfiresHome ? awayTeamName : homeTeamName
@@ -260,10 +264,12 @@ function buildPrompt({ homeTeamName, awayTeamName, homeScore, awayScore, goals =
     return `  P${p.period} ${p.periodTime} — ${p.player?.name ?? 'Unknown'} (${team}) ${p.offenceCode} ${p.minutes}min`
   }).join('\n') || '  None'
 
+  const goalieLine = (teamName, g) =>
+    `  ${teamName}: ${g.player?.name ?? 'Unknown'} — ${g.saves} saves from ${g.totalShots} shots (${g.savePercent}% SV%)`
   const goalieLines = [
-    homeGoalie ? `  ${homeTeamName}: ${homeGoalie.player?.name ?? 'Unknown'} — ${homeGoalie.saves} saves from ${homeGoalie.totalShots} shots (${homeGoalie.savePercent}% SV%)` : null,
-    awayGoalie ? `  ${awayTeamName}: ${awayGoalie.player?.name ?? 'Unknown'} — ${awayGoalie.saves} saves from ${awayGoalie.totalShots} shots (${awayGoalie.savePercent}% SV%)` : null,
-  ].filter(Boolean).join('\n') || '  No data'
+    ...homeGoalies.map(g => goalieLine(homeTeamName, g)),
+    ...awayGoalies.map(g => goalieLine(awayTeamName, g)),
+  ].join('\n') || '  No data'
 
   const resultContext = result === 'win'
     ? `The Spitfires won ${spitfiresScore}–${opponentScore}. Open with an upbeat, celebratory tone.`

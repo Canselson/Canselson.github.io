@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { ChevronUp, ChevronDown } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { goaliesFor } from '../../lib/parseDGS'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -50,7 +51,7 @@ function computePlayerStats(games) {
     const dgs        = mr.dgs_data
     const side       = game.home_away
     const spitRoster = side === 'home' ? (dgs.homeRoster || []) : (dgs.awayRoster || [])
-    const spitGoalie = side === 'home' ? dgs.homeGoalie : dgs.awayGoalie
+    const spitGoalies = goaliesFor(dgs, side)
     const spitScore  = side === 'home' ? mr.home_score : mr.away_score
     const oppScore   = side === 'home' ? mr.away_score : mr.home_score
     const spitGoals  = (dgs.goals || []).filter(g => g.team === side)
@@ -72,7 +73,16 @@ function computePlayerStats(games) {
       s.eng     += pg.filter(gl => gl.type === 'EN').length
     }
 
-    if (spitGoalie?.player?.id) {
+    // The decision (W/L/D) goes to the primary netminder — the one with the
+    // most ice time in a shared game.
+    const primaryGoalieId = spitGoalies.length
+      ? spitGoalies.reduce((best, g) =>
+          parseToiSecs(g.timeOnIce) > parseToiSecs(best.timeOnIce) ? g : best
+        ).player?.id
+      : null
+
+    for (const spitGoalie of spitGoalies) {
+      if (!spitGoalie?.player?.id) continue
       const id = spitGoalie.player.id
       if (!goalieMap[id]) {
         goalieMap[id] = { id, name: spitGoalie.player.name, gp: 0, w: 0, l: 0, d: 0, ga: 0, sa: 0, sv: 0, so: 0, toiSecs: 0 }
@@ -83,11 +93,14 @@ function computePlayerStats(games) {
       g.ga       += spitGoalie.totalGoals
       g.sa       += spitGoalie.totalShots
       g.sv       += spitGoalie.saves
-      g.so       += spitGoalie.totalGoals === 0 ? 1 : 0
+      // Shutout only when a single goalie played the whole game with 0 against.
+      g.so       += (spitGoalie.totalGoals === 0 && spitGoalies.length === 1) ? 1 : 0
       g.toiSecs  += parseToiSecs(spitGoalie.timeOnIce)
-      if      (spitScore > oppScore) g.w++
-      else if (spitScore < oppScore) g.l++
-      else                            g.d++
+      if (id === primaryGoalieId) {
+        if      (spitScore > oppScore) g.w++
+        else if (spitScore < oppScore) g.l++
+        else                            g.d++
+      }
     }
   }
 
@@ -140,8 +153,9 @@ function computeTeamStats(games) {
     if (mr.dgs_data) {
       const dgs      = mr.dgs_data
       const spitRoster = side === 'home' ? (dgs.homeRoster || []) : (dgs.awayRoster || [])
-      const spitGoalie = side === 'home' ? dgs.homeGoalie : dgs.awayGoalie
-      const oppGoalie  = side === 'home' ? dgs.awayGoalie : dgs.homeGoalie
+      const spitGoalies = goaliesFor(dgs, side)
+      const oppGoalies  = goaliesFor(dgs, side === 'home' ? 'away' : 'home')
+      const sumShots    = arr => arr.reduce((acc, g) => acc + (g.totalShots ?? 0), 0)
       const spitGoals  = (dgs.goals     || []).filter(g => g.team === side)
       const oppGoals   = (dgs.goals     || []).filter(g => g.team !== side)
       const spitPens   = (dgs.penalties || []).filter(p => p.team === side)
@@ -152,8 +166,8 @@ function computeTeamStats(games) {
       ts.pkga  += oppGoals.filter(g => g.type === 'PP').length
       ts.pkOpp += spitPens.length
       ts.shg   += spitGoals.filter(g => g.type === 'SH').length
-      ts.sf    += oppGoalie?.totalShots ?? 0
-      ts.sa    += spitGoalie?.totalShots ?? 0
+      ts.sf    += sumShots(oppGoalies)
+      ts.sa    += sumShots(spitGoalies)
       ts.sfGames++
       ts.pim   += spitPens.reduce((acc, p) => acc + (p.minutes || 0), 0)
       ts.pimGames++

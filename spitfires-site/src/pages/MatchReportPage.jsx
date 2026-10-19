@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { goaliesFor } from '../lib/parseDGS'
 import PageMeta from '../components/PageMeta'
 
 const TEAMS = {
@@ -105,11 +106,11 @@ export default function MatchReportPage() {
         </Section>
       )}
 
-      {(dgs?.homeGoalie || dgs?.awayGoalie) && (
+      {(goaliesFor(dgs, 'home').length > 0 || goaliesFor(dgs, 'away').length > 0) && (
         <Section title="Goaltending">
           <GoaliesSection
-            homeGoalie={dgs.homeGoalie}
-            awayGoalie={dgs.awayGoalie}
+            homeGoalies={goaliesFor(dgs, 'home')}
+            awayGoalies={goaliesFor(dgs, 'away')}
             homeTeam={homeTeam}
             awayTeam={awayTeam}
           />
@@ -246,11 +247,15 @@ function PenaltyRow({ penalty }) {
 
 // ─── Goalies ──────────────────────────────────────────────────────────────────
 
-function GoaliesSection({ homeGoalie, awayGoalie, homeTeam, awayTeam }) {
+function GoaliesSection({ homeGoalies, awayGoalies, homeTeam, awayTeam }) {
   return (
     <div className="grid sm:grid-cols-2 gap-4">
-      {homeGoalie && <GoalieCard goalie={homeGoalie} teamName={homeTeam} label="Home" color="#00436b" />}
-      {awayGoalie && <GoalieCard goalie={awayGoalie} teamName={awayTeam} label="Away" color="#641e31" />}
+      {homeGoalies.map((g, i) => (
+        <GoalieCard key={g.player?.id ?? `home-${i}`} goalie={g} teamName={homeTeam} label="Home" color="#00436b" />
+      ))}
+      {awayGoalies.map((g, i) => (
+        <GoalieCard key={g.player?.id ?? `away-${i}`} goalie={g} teamName={awayTeam} label="Away" color="#641e31" />
+      ))}
     </div>
   )
 }

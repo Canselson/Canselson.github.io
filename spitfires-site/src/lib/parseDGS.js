@@ -38,8 +38,9 @@ export function parseDGS(raw) {
     ...parsePenalties(sections['7'] ?? [], playerMap, 'away'),
   ].sort((a, b) => timeToSecs(a.cumulativeTime) - timeToSecs(b.cumulativeTime))
 
-  const homeGoalie = parseGoalie(sections['8']?.[0], playerMap)
-  const awayGoalie = parseGoalie(sections['9']?.[0], playerMap)
+  // A team may dress two netminders — parse every line, not just the first.
+  const homeGoalies = parseGoalies(sections['8'] ?? [], playerMap)
+  const awayGoalies = parseGoalies(sections['9'] ?? [], playerMap)
 
   const homeScore = goals.filter(g => g.team === 'home').length
   const awayScore = goals.filter(g => g.team === 'away').length
@@ -49,8 +50,18 @@ export function parseDGS(raw) {
     homeScore, awayScore,
     homeRoster, awayRoster,
     goals, penalties,
-    homeGoalie, awayGoalie,
+    homeGoalies, awayGoalies,
   }
+}
+
+// Normalises goalie data to an array, tolerating both the current shape
+// (homeGoalies/awayGoalies arrays) and older stored reports that saved a
+// single homeGoalie/awayGoalie object.
+export function goaliesFor(dgs, side) {
+  const arr = side === 'home' ? dgs?.homeGoalies : dgs?.awayGoalies
+  if (Array.isArray(arr)) return arr.filter(Boolean)
+  const single = side === 'home' ? dgs?.homeGoalie : dgs?.awayGoalie
+  return single ? [single] : []
 }
 
 // ─── Section splitter ─────────────────────────────────────────────────────────
@@ -143,7 +154,11 @@ function parsePenalties(lines, playerMap, sectionTeam) {
 // ─── Goalie (%8 = home, %9 = away) ───────────────────────────────────────────
 // playerID, TOI, P1shots, P1goalsAgainst, P2shots, P2goalsAgainst, P3shots, P3goalsAgainst
 
-function parseGoalie(line, playerMap) {
+function parseGoalies(lines, playerMap) {
+  return lines.map(line => parseGoalieLine(line, playerMap)).filter(Boolean)
+}
+
+function parseGoalieLine(line, playerMap) {
   if (!line) return null
   const p       = line.split(',').map(s => s.trim())
   const periods = [
