@@ -30,6 +30,7 @@ const EMPTY_FORM = {
   startTime:   '',
   endDate:     '',
   endTime:     '',
+  repeatUntil: '',
   location:    '',
   description: '',
 }
@@ -397,6 +398,21 @@ function EventFormPanel({ initial, onClose, onSaved }) {
     setSaving(true)
     setError(null)
     const payload = formToPayload(form)
+
+    // Weekly recurrence (new events only): one copy per week up to repeatUntil.
+    if (isNew && form.repeatUntil) {
+      const rows = weeklyOccurrences(form).map(o => ({ ...payload, starts_at: o.starts_at, ends_at: o.ends_at }))
+      const { error } = await supabase.from('events').insert(rows)
+      if (error) { setError(error.message); setSaving(false); return }
+      logAudit({
+        action:     'create',
+        entityType: 'event',
+        summary:    `Created ${rows.length} weekly events: ${payload.title}`,
+      })
+      onSaved()
+      return
+    }
+
     const { data, error } = isNew
       ? await supabase.from('events').insert(payload).select('id').single()
       : await supabase.from('events').update(payload).eq('id', initial.id).select('id').single()
@@ -545,6 +561,23 @@ function EventFormPanel({ initial, onClose, onSaved }) {
               />
             </div>
           </Field>
+
+          {/* Weekly recurrence — only when creating */}
+          {isNew && (
+            <Field label="Repeat weekly until (optional)">
+              <input
+                type="date"
+                aria-label="Repeat weekly until"
+                value={form.repeatUntil}
+                onChange={set('repeatUntil')}
+                min={form.startDate || undefined}
+                className={inputClass}
+              />
+              <span className="text-white/25 text-xs">
+                Leave blank for a one-off. If set, a copy of this event is created every week up to and including this date.
+              </span>
+            </Field>
+          )}
 
           {/* Location */}
           <Field label="Location">
@@ -986,6 +1019,25 @@ function formToPayload(form) {
   }
 }
 
+// Weekly occurrence start/end timestamps from the first occurrence up to and
+// including repeatUntil. End (if any) shifts by the same number of days so each
+// copy keeps the original duration. Uses local-date arithmetic so the wall-clock
+// time is preserved across daylight-saving changes.
+function weeklyOccurrences(form) {
+  const start = new Date(`${form.startDate}T${form.startTime}`)
+  const end   = form.endDate && form.endTime ? new Date(`${form.endDate}T${form.endTime}`) : null
+  const until = new Date(`${form.repeatUntil}T23:59:59`)
+  const rows  = []
+  for (let i = 0; ; i++) {
+    const s = new Date(start); s.setDate(s.getDate() + 7 * i)
+    if (s > until) break
+    let e = null
+    if (end) { e = new Date(end); e.setDate(e.getDate() + 7 * i) }
+    rows.push({ starts_at: s.toISOString(), ends_at: e ? e.toISOString() : null })
+  }
+  return rows
+}
+
 function validate(form) {
   if (!form.startDate || !form.startTime) return 'Start date and time are required.'
   if (form.type === 'game' && !form.team)            return 'Please select a team.'
@@ -996,6 +1048,9 @@ function validate(form) {
     const start = new Date(`${form.startDate}T${form.startTime}`)
     const end   = new Date(`${form.endDate}T${form.endTime}`)
     if (end <= start) return 'End must be after the start.'
+  }
+  if (form.repeatUntil && form.startDate && form.repeatUntil < form.startDate) {
+    return 'Repeat-until date must be on or after the start date.'
   }
   return null
 }
