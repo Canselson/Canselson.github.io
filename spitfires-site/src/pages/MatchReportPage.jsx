@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { Star } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { goaliesFor } from '../lib/parseDGS'
 import PageMeta from '../components/PageMeta'
@@ -79,6 +80,16 @@ export default function MatchReportPage() {
         teamLabel={TEAMS[event.team] ?? null}
         homeAway={event.home_away}
       />
+
+      {report?.mvp_player_name && (
+        <div className="flex items-center gap-3 bg-[#111827] border border-[#641e31]/40 rounded-xl px-5 py-4 mb-8">
+          <Star size={20} className="text-[#e89aaa] shrink-0" fill="#e89aaa" />
+          <div>
+            <p className="text-white/40 text-xs font-black uppercase tracking-widest">Spitfires Player of the Match</p>
+            <p className="text-white font-bold text-lg leading-tight mt-0.5">{report.mvp_player_name}</p>
+          </div>
+        </div>
+      )}
 
       {!report && (
         <div className="text-center py-16 text-white/20 text-sm uppercase tracking-widest">
@@ -249,13 +260,17 @@ function PenaltyRow({ penalty }) {
 
 function GoaliesSection({ homeGoalies, awayGoalies, homeTeam, awayTeam }) {
   return (
-    <div className="grid sm:grid-cols-2 gap-4">
-      {homeGoalies.map((g, i) => (
-        <GoalieCard key={g.player?.id ?? `home-${i}`} goalie={g} teamName={homeTeam} label="Home" color="#00436b" />
-      ))}
-      {awayGoalies.map((g, i) => (
-        <GoalieCard key={g.player?.id ?? `away-${i}`} goalie={g} teamName={awayTeam} label="Away" color="#641e31" />
-      ))}
+    <div className="grid sm:grid-cols-2 gap-4 items-start">
+      <div className="flex flex-col gap-4">
+        {homeGoalies.map((g, i) => (
+          <GoalieCard key={g.player?.id ?? `home-${i}`} goalie={g} teamName={homeTeam} label="Home" color="#00436b" />
+        ))}
+      </div>
+      <div className="flex flex-col gap-4">
+        {awayGoalies.map((g, i) => (
+          <GoalieCard key={g.player?.id ?? `away-${i}`} goalie={g} teamName={awayTeam} label="Away" color="#641e31" />
+        ))}
+      </div>
     </div>
   )
 }
@@ -267,12 +282,17 @@ function GoalieCard({ goalie, teamName, label, color }) {
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
         <p className="text-white/30 text-xs uppercase tracking-widest">{label} · {teamName}</p>
       </div>
-      <p className="text-white font-black text-lg mb-4">
+      <p className="text-white font-black text-lg mb-1">
         {goalie.player?.name ?? 'Unknown'}
         {goalie.player?.number ? (
           <span className="text-white/30 text-sm font-normal ml-2">#{goalie.player.number}</span>
         ) : null}
       </p>
+      {goalie.timeOnIce && (
+        <p className="text-white/40 text-xs uppercase tracking-widest mb-4">
+          {goalie.timeOnIce} on ice
+        </p>
+      )}
       <div className="grid grid-cols-4 gap-3 text-center">
         {[
           { label: 'Saves', value: goalie.saves },

@@ -34,6 +34,7 @@ export default function ReportAdmin() {
   const [forfeitMode,   setForfeitMode]   = useState(false)
   const [forfeitedBy,   setForfeitedBy]   = useState('opponent')
   const [tab,        setTab]        = useState('goals')
+  const [mvpId,      setMvpId]      = useState('')
   const fileRef = useRef()
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export default function ReportAdmin() {
       if (rpt) {
         setReport(rpt)
         setReportText(rpt.report_text ?? '')
+        setMvpId(rpt.mvp_player_id ?? '')
         if (rpt.dgs_data) {
           setDgsData(rpt.dgs_data)
         } else if (rpt.home_score != null) {
@@ -109,12 +111,16 @@ export default function ReportAdmin() {
   async function save() {
     setSaving(true)
     setSaveStatus(null)
+    const spitRoster = event?.home_away === 'home' ? (dgsData?.homeRoster || []) : (dgsData?.awayRoster || [])
+    const mvpPlayer  = spitRoster.find(p => p.id === mvpId) || null
     const payload = {
-      event_id:    eventId,
-      report_text: reportText.trim() || null,
-      dgs_data:    dgsData,
-      home_score:  dgsData?.homeScore ?? null,
-      away_score:  dgsData?.awayScore ?? null,
+      event_id:        eventId,
+      report_text:     reportText.trim() || null,
+      dgs_data:        dgsData,
+      home_score:      dgsData?.homeScore ?? null,
+      away_score:      dgsData?.awayScore ?? null,
+      mvp_player_id:   mvpPlayer ? mvpId : null,
+      mvp_player_name: mvpPlayer?.name ?? null,
     }
     const { data, error } = report
       ? await supabase.from('match_reports').update(payload).eq('id', report.id).select().single()
@@ -180,6 +186,10 @@ export default function ReportAdmin() {
   const dateStr   = new Date(event.starts_at).toLocaleDateString('en-GB', {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
   })
+
+  // Spitfires dressed roster — source for the MVP picker
+  const spitRoster  = event.home_away === 'home' ? (dgsData?.homeRoster || []) : (dgsData?.awayRoster || [])
+  const spitDressed = spitRoster.filter(p => p.dressed)
 
   return (
     <div className="max-w-3xl">
@@ -376,6 +386,30 @@ export default function ReportAdmin() {
           </div>
         )}
 
+        {/* Spitfires MVP picker — needs a parsed gamesheet for the roster */}
+        {dgsData && !forfeitMode && (
+          <div className="bg-[#111827] border border-white/10 rounded-xl p-5">
+            <label className="flex flex-col gap-2">
+              <span className="text-white/50 text-xs font-black uppercase tracking-widest">
+                Spitfires MVP (optional)
+              </span>
+              <select
+                aria-label="Spitfires MVP"
+                value={mvpId}
+                onChange={e => setMvpId(e.target.value)}
+                className="w-full bg-[#0a0f1a] border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-white/25 transition-colors [&>option]:bg-[#0a0f1a]"
+              >
+                <option value="">— None —</option>
+                {spitDressed.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.number ? `#${p.number} ` : ''}{p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
+
         {/* Report narrative — hidden for forfeits */}
         {!forfeitMode &&
         <div className="bg-[#111827] border border-white/10 rounded-xl p-5">
@@ -534,13 +568,17 @@ function PenaltiesPreview({ penalties }) {
 
 function GoaliesPreview({ homeGoalies, awayGoalies, homeTeam, awayTeam }) {
   return (
-    <div className="grid sm:grid-cols-2 gap-4">
-      {homeGoalies.map((g, i) => (
-        <GoaliePreviewCard key={g.player?.id ?? `home-${i}`} goalie={g} teamName={homeTeam} label="Home" />
-      ))}
-      {awayGoalies.map((g, i) => (
-        <GoaliePreviewCard key={g.player?.id ?? `away-${i}`} goalie={g} teamName={awayTeam} label="Away" />
-      ))}
+    <div className="grid sm:grid-cols-2 gap-4 items-start">
+      <div className="flex flex-col gap-4">
+        {homeGoalies.map((g, i) => (
+          <GoaliePreviewCard key={g.player?.id ?? `home-${i}`} goalie={g} teamName={homeTeam} label="Home" />
+        ))}
+      </div>
+      <div className="flex flex-col gap-4">
+        {awayGoalies.map((g, i) => (
+          <GoaliePreviewCard key={g.player?.id ?? `away-${i}`} goalie={g} teamName={awayTeam} label="Away" />
+        ))}
+      </div>
     </div>
   )
 }
@@ -549,7 +587,11 @@ function GoaliePreviewCard({ goalie, teamName, label }) {
   return (
     <div className="bg-[#0d1520] rounded-lg p-4">
       <p className="text-white/30 text-xs uppercase tracking-widest mb-1">{label} — {teamName}</p>
-      <p className="text-white font-bold mb-3">{goalie.player?.name ?? 'Unknown'}</p>
+      <p className="text-white font-bold">{goalie.player?.name ?? 'Unknown'}</p>
+      {goalie.timeOnIce && (
+        <p className="text-white/40 text-xs mb-3">{goalie.timeOnIce} on ice</p>
+      )}
+      {!goalie.timeOnIce && <div className="mb-3" />}
       <div className="grid grid-cols-4 gap-2 text-center">
         {[
           { label: 'Saves', value: goalie.saves },
